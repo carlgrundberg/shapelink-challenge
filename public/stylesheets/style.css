@@ -1,8 +1,18 @@
 body {
   padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
-a {
-  color: #00B7FF;
+.section {
+    display: none;
+}
+
+.progress {
+    margin-top: 50px;
+    height: 42px;
+    background-color: #2b3e50;
+}
+
+.progress-bar {
+    min-width: 2em;
+    line-height: 42px;
 }
