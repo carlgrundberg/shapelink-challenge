@@ -2,6 +2,10 @@ body {
   padding: 50px;
 }
 
+.jumbotron {
+    text-align: center;
+}
+
 .section {
     display: none;
 }
@@ -9,7 +13,6 @@ body {
 .progress {
     margin-top: 50px;
     height: 42px;
-    background-color: #2b3e50;
 }
 
 .progress-bar {
