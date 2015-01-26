@@ -16,7 +16,7 @@ function getHistory(user) {
         } else {
             $('#result h1').html('You have done <strong>' + data.result.totals.reps + '</strong> burpees, keep on going!');
         }
-        $('#result .progress-bar').attr('aria-valuenow', data.result.totals.reps).css('min-width', '2em').html(Math.round(data.result.totals.reps / 1000 * 100) + '%');
+        $('#result .progress-bar').attr('aria-valuenow', data.result.totals.reps).css('min-width', '2em').html(Math.max(Math.round(data.result.totals.reps / 2500 * 100), 100) + '%');
         $('#result').show();
     }).fail(onError);
 }
