@@ -21,13 +21,14 @@
                 </div>
             </div>
         </div>
+        <div class="alert alert-danger hidden" role="alert" id="error-message"></div>
         <button type="submit" class="btn btn-lg btn-primary">Find out!</button>
     </form>
 </div>
 
 <div id="result" class="section jumbotron">
-    <h1></h1>
-
+    <h2 class="title"></h2>
+    <p>You have <strong class="days">{{days}}</strong> days to do <strong class="remaining">{{goal}}</strong> burpees, that's around <strong class="average">alot of</strong> burpees a day.</p>
     <div class="progress">
         <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="{{goal}}"></div>
     </div>
