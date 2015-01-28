@@ -5,13 +5,26 @@ var config = require('../config.json');
 var Shapelink = require('../../shapelink-node-sdk').Shapelink;
 var shapelink = new Shapelink(config.shapelink.apiKey, config.shapelink.secret, 'sv', true);
 
+var storage = require('node-persist');
+storage.initSync({
+    dir: __dirname + '/../db'
+});
+
+var users = storage.getItemSync('users') || {};
+
+
+function storeUser(user) {
+    users[user.user_id] = user;
+    storage.setItem('users',users);
+}
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: config.name });
+  res.render('index', { title: config.name, goal: config.goal });
 });
 
 router.post('/login', function(req, res, next) {
     shapelink.auth().requireToken(req.body.username, req.body.password, function(data) {
+        storeUser(data.result);
         res.send(data);
     }, function(err) {
         res.status(400).send(err);
@@ -19,6 +32,12 @@ router.post('/login', function(req, res, next) {
 });
 
 router.get('/history', function(req, res, next) {
+    if(!users[req.query.user_id]) {
+        storeUser({
+            user_id: req.query.user_id,
+            token: req.query.token
+        });
+    }
 
     shapelink.diary().getStrengthExercises(req.query.token, function(data) {
         for(var i in data.result) {

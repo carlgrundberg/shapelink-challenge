@@ -1,9 +1,9 @@
-<div id="header">
+<div id="header" class="jumbotron">
     <h1>Are you ready for Toughest?</h1>
-    <p>We challenge you to do <strong>1000</strong> burpees before the race.</p>
+    <p>We challenge you to do <strong>{{goal}}</strong> burpees before the race.</p>
 </div>
 
-<div id="register" class="section">
+<div id="register" class="section jumbotron">
     <p>Log in to your Shapelink account to find out how you are doing.</p>
 
     <form id="register-form">
@@ -25,10 +25,10 @@
     </form>
 </div>
 
-<div id="result" class="section">
+<div id="result" class="section jumbotron">
     <h1></h1>
 
     <div class="progress">
-        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="1000"></div>
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="{{goal}}"></div>
     </div>
 </div>
