@@ -3,6 +3,7 @@ var express = require('express');
 var moment = require('moment');
 var router = express.Router();
 var config = require('../config.json');
+var _ = require('underscore');
 
 var Shapelink = require('../../shapelink-node-sdk').Shapelink;
 var shapelink = new Shapelink(config.shapelink.apiKey, config.shapelink.secret, 'sv', true);
@@ -16,11 +17,24 @@ var users = storage.getItemSync('users') || {};
 
 
 function storeUser(user) {
-    users[user.user_id] = user;
-    storage.setItem('users', users);
+    shapelink.user().get(user.token, user.user_id, function(data) {
+        user.firstname = data.result.user.firstname;
+        user.lastname = data.result.user.lastname;
+        users[user.user_id] = user;
+        storage.setItem('users', users);
+    }, function(err) {
+       console.log(err);
+    });
 }
 
 function getResultForUser(user) {
+    if (!user.firstname) {
+        storeUser({
+            user_id: user.user_id,
+            token: user.token
+        });
+    }
+
     var deferred = q.defer();
     shapelink.diary().getStrengthExercises(user.token, function (data) {
         for (var i in data.result) {
@@ -28,7 +42,7 @@ function getResultForUser(user) {
                 var exercise = data.result[i][j];
                 if (exercise.name.toLowerCase().indexOf(config.exercise) != -1) {
                     shapelink.statistics().getStrengthExerciseHistory(user.token, exercise.id, config.startDate, config.endDate, function (data) {
-                        data.user_id = user.user_id;
+                        data.user = _.pick(user, ['user_id', 'firstname', 'lastname']);
                         deferred.resolve(data);
                     }, function (err) {
                         deferred.reject(err);
@@ -63,13 +77,12 @@ router.post('/login', function (req, res) {
 });
 
 router.get('/history', function (req, res, next) {
-    if (!users[req.query.user_id]) {
+    if (!users[req.query.user_id] || !users[req.query.user_id].firstname) {
         storeUser({
             user_id: req.query.user_id,
             token: req.query.token
         });
     }
-
     var user = users[req.query.user_id];
 
     getResultForUser(user).then(function(data) {
@@ -89,6 +102,16 @@ router.get('/toplist', function(req, res, next) {
                 var result = results[i].value;
                 r.push(result)
             }
+        }
+        r.sort(function(a, b) {
+           return a.result.totals.reps < b.result.totals.reps ? 1 : -1;
+        });
+        var p = 0;
+        for(var i in r) {
+            if(i == 0 || r[i].result.totals.reps != r[i-1].result.totals.reps) {
+                p++;
+            }
+            r[i].pos = p;
         }
         res.send(r);
     }, function(err) {

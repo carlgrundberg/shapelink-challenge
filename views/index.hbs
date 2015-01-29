@@ -26,17 +26,25 @@
     </form>
 </div>
 
-<div id="result" class="section jumbotron">
-    <h2 class="title"></h2>
-    <p>You have <strong class="days">{{days}}</strong> days to do <strong class="remaining">{{goal}}</strong> burpees, that's about <strong class="average">alot of</strong> burpees a day.</p>
-    <div class="progress">
-        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="{{goal}}"></div>
+<div class="row">
+    <div class="col-lg-6">
+        <div id="result" class="section jumbotron">
+            <h2 class="title"></h2>
+            <p>You have <strong class="days">{{days}}</strong> days to do <strong class="remaining">{{goal}}</strong> burpees, that's about <strong class="average">alot of</strong> burpees a day.</p>
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="{{goal}}"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div id="toplist" class="section jumbotron">
+            <h2>Toplist</h2>
+
+            <table class="table table-striped">
+            </table>
+        </div>
     </div>
 </div>
 
-<div id="toplist" class="section jumbotron">
-    <h2>Toplist</h2>
 
-    <table class="table table-striped">
-    </table>
-</div>
+

@@ -22,7 +22,7 @@ function getToplist() {
         var toplist = $('#toplist');
         var table = toplist.find('table');
         for(var i in data) {
-            table.append('<tr><td>'+data[i].user_id+'</td><td>'+data[i].result.totals.reps+'</td></tr>');
+            table.append('<tr><td>'+data[i].pos+'</td><td>'+data[i].user.firstname + ' ' + data[i].user.lastname +'</td><td>'+data[i].result.totals.reps+'</td></tr>');
         }
         toplist.show();
     }).fail(onError);
@@ -49,7 +49,8 @@ function getHistory() {
         var remaining = max - data.result.totals.reps;
         result.find('.remaining').html(remaining);
         result.find('.average').html(Math.round(remaining / parseInt(result.find('.days').html())));
-        progressBar.attr('aria-valuenow', data.result.totals.reps).css('min-width', '2em').html(Math.min(Math.round(data.result.totals.reps / max * 100), 100) + '%');
+        var width = Math.min(Math.round(data.result.totals.reps / max * 100), 100) + '%';
+        progressBar.attr('aria-valuenow', data.result.totals.reps).css('width', width).html(width);
         showSection(result, true);
     }).fail(onError);
 }
