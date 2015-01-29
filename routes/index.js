@@ -1,6 +1,7 @@
+var q = require('q');
 var express = require('express');
-var router = express.Router();
 var moment = require('moment');
+var router = express.Router();
 var config = require('../config.json');
 
 var Shapelink = require('../../shapelink-node-sdk').Shapelink;
@@ -18,8 +19,33 @@ function storeUser(user) {
     users[user.user_id] = user;
     storage.setItem('users', users);
 }
+
+function getResultForUser(user) {
+    var deferred = q.defer();
+    shapelink.diary().getStrengthExercises(user.token, function (data) {
+        for (var i in data.result) {
+            for (var j in data.result[i]) {
+                var exercise = data.result[i][j];
+                if (exercise.name.toLowerCase().indexOf(config.exercise) != -1) {
+                    shapelink.statistics().getStrengthExerciseHistory(user.token, exercise.id, config.startDate, config.endDate, function (data) {
+                        data.user_id = user.user_id;
+                        deferred.resolve(data);
+                    }, function (err) {
+                        deferred.reject(err);
+                    });
+                    return;
+                }
+            }
+        }
+        // Exercise not found
+        deferred.reject({error: 101, message: 'No exercise found'});
+    }, function (err) {
+        deferred.reject(err);
+    });
+    return deferred.promise;
+}
 /* GET home page. */
-router.get('/', function (req, res, next) {
+router.get('/', function (req, res) {
     res.render('index', {
         title: config.name,
         goal: config.goal,
@@ -27,7 +53,7 @@ router.get('/', function (req, res, next) {
     });
 });
 
-router.post('/login', function (req, res, next) {
+router.post('/login', function (req, res) {
     shapelink.auth().requireToken(req.body.username, req.body.password, function (data) {
         storeUser(data.result);
         res.send(data);
@@ -44,24 +70,32 @@ router.get('/history', function (req, res, next) {
         });
     }
 
-    shapelink.diary().getStrengthExercises(req.query.token, function (data) {
-        for (var i in data.result) {
-            for (var j in data.result[i]) {
-                var exercise = data.result[i][j];
-                if (exercise.name.toLowerCase().indexOf(config.exercise) != -1) {
-                    shapelink.statistics().getStrengthExerciseHistory(req.query.token, exercise.id, config.startDate, config.endDate, function (data) {
-                        res.send(data);
-                    }, function (err) {
-                        res.status(400).send(err);
-                    });
-                    return;
-                }
+    var user = users[req.query.user_id];
+
+    getResultForUser(user).then(function(data) {
+        res.send(data);
+    }).catch(next);
+});
+
+router.get('/toplist', function(req, res, next) {
+    var p = [];
+    for(var user_id in users) {
+        p.push(getResultForUser(users[user_id]));
+    }
+    q.allSettled(p).done(function(results) {
+        var r = [];
+        for(var i in results) {
+            if(results[i].state == 'fulfilled') {
+                var result = results[i].value;
+                r.push(result)
             }
         }
-        // Exercise not found
-        res.status(400).send({error: 'No exercise found'});
-    }, function (err) {
-        res.status(400).send(err);
+        res.send(r);
+    }, function(err) {
+        console.log(err);
+        if (err.error != 101) {
+            next(err);
+        }
     });
 });
 

@@ -1,3 +1,4 @@
+var user = localStorage.getItem("user");
 
 function onError(jqXHR, textStatus, errorThrown) {
     var error = JSON.parse(jqXHR.responseText)
@@ -5,7 +6,29 @@ function onError(jqXHR, textStatus, errorThrown) {
     $('#error-message').html(error.message).removeClass('hidden').scrollTo();
 }
 
-function getHistory(user) {
+function showSection(section, scrollTo) {
+    $(section).show();
+    if(scrollTo) {
+        $('html, body').animate({
+            scrollTop: section.offset().top
+        }, 1000);
+    }
+}
+
+function getToplist() {
+    $.ajax({
+        url: '/toplist'
+    }).done(function(data) {
+        var toplist = $('#toplist');
+        var table = toplist.find('table');
+        for(var i in data) {
+            table.append('<tr><td>'+data[i].user_id+'</td><td>'+data[i].result.totals.reps+'</td></tr>');
+        }
+        toplist.show();
+    }).fail(onError);
+}
+
+function getHistory() {
     $.ajax({
         url: '/history',
         data: {
@@ -27,13 +50,14 @@ function getHistory(user) {
         result.find('.remaining').html(remaining);
         result.find('.average').html(Math.round(remaining / parseInt(result.find('.days').html())));
         progressBar.attr('aria-valuenow', data.result.totals.reps).css('min-width', '2em').html(Math.min(Math.round(data.result.totals.reps / max * 100), 100) + '%');
-        result.show();
+        showSection(result, true);
     }).fail(onError);
 }
 
-var user = localStorage.getItem("user");
 if(user) {
-    getHistory(JSON.parse(user));
+    user = JSON.parse(user);
+    getHistory();
+    getToplist();
 } else {
     $('#register-form').submit(function(e) {
         e.preventDefault();
@@ -43,7 +67,8 @@ if(user) {
             data: $(this).serialize()
         }).done(function(data) {
             localStorage.setItem("user", JSON.stringify(data.result));
-            getHistory(data.result);
+            user = data.result;
+            getHistory();
         }).fail(onError)
     });
     $('#register').show();
