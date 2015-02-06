@@ -1,9 +1,6 @@
-.jumbotron {
-    text-align: center;
-}
 
 .section {
-    display: none;
+    position: relative;
 }
 
 .progress {
@@ -14,4 +11,65 @@
 .progress-bar {
     min-width: 2em;
     line-height: 42px;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0, 0.8);
+
+}
+
+.loading-overlay i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-size: 72px;
+    margin-top: -36px;
+    margin-left: -36px;
+    color: #fff;
+}
+
+.gly-spin {
+    -webkit-animation: spin 2s infinite linear;
+    -moz-animation: spin 2s infinite linear;
+    -o-animation: spin 2s infinite linear;
+    animation: spin 2s infinite linear;
+}
+@-moz-keyframes spin {
+    0% {
+        -moz-transform: rotate(0deg);
+    }
+    100% {
+        -moz-transform: rotate(359deg);
+    }
+}
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+    }
+}
+@-o-keyframes spin {
+    0% {
+        -o-transform: rotate(0deg);
+    }
+    100% {
+        -o-transform: rotate(359deg);
+    }
+}
+@keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
 }

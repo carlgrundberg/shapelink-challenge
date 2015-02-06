@@ -6,29 +6,56 @@ function onError(jqXHR, textStatus, errorThrown) {
     $('#error-message').html(error.message).removeClass('hidden').scrollTo();
 }
 
-function showSection(section, scrollTo) {
-    $(section).show();
-    if(scrollTo) {
-        $('html, body').animate({
-            scrollTop: section.offset().top
-        }, 1000);
+function scrollToSection(section) {
+    $('html, body').animate({
+        scrollTop: section.offset().top
+    }, 1000);
+}
+
+function renderToplist(el, data) {
+    var table = el.find('table').empty();
+    for(var i in data) {
+        table.append('<tr><td>'+data[i].pos+'</td><td>'+data[i].user.firstname + ' ' + data[i].user.lastname +'</td><td>'+data[i].result.totals.reps+'</td></tr>');
     }
 }
 
 function getToplist() {
+    var toplist = JSON.parse(localStorage.getItem('toplist'));
+    var container = $('#toplist');
+    if(toplist) {
+        renderToplist(container, toplist);
+    }
     $.ajax({
         url: '/toplist'
     }).done(function(data) {
-        var toplist = $('#toplist');
-        var table = toplist.find('table');
-        for(var i in data) {
-            table.append('<tr><td>'+data[i].pos+'</td><td>'+data[i].user.firstname + ' ' + data[i].user.lastname +'</td><td>'+data[i].result.totals.reps+'</td></tr>');
-        }
-        toplist.show();
+        localStorage.setItem('toplist', JSON.stringify(data));
+        renderToplist(container, data);
+        container.find('.loading-overlay').hide();
     }).fail(onError);
 }
 
+function renderHistory(container, data) {
+    if(data.result.totals.reps == 0) {
+        container.find('.title').html('You haven\'t done any burpees yet!');
+    } else {
+        container.find('.title').html('You have done <strong>' + data.result.totals.reps + '</strong> burpees, keep on going!');
+    }
+
+    var progressBar = container.find('.progress-bar');
+    var max = progressBar.attr('aria-valuemax');
+    var remaining = max - data.result.totals.reps;
+    container.find('.remaining').html(remaining);
+    container.find('.average').html(Math.round(remaining / parseInt(container.find('.days').html())));
+    var width = Math.min(Math.round(data.result.totals.reps / max * 100), 100) + '%';
+    progressBar.attr('aria-valuenow', data.result.totals.reps).css('width', width).html(width);
+}
+
 function getHistory() {
+    var history = JSON.parse(localStorage.getItem('history'));
+    var container = $('#result');
+    if(history) {
+        renderHistory(container, history);
+    }
     $.ajax({
         url: '/history',
         data: {
@@ -36,29 +63,23 @@ function getHistory() {
             token: user.token
         }
     }).done(function(data) {
-        $('#register').hide();
-        var result = $('#result');
-        if(data.result.totals.reps == 0) {
-            result.find('.title').html('You haven\'t done any burpees yet!');
-        } else {
-            result.find('.title').html('You have done <strong>' + data.result.totals.reps + '</strong> burpees, keep on going!');
-        }
-
-        var progressBar = result.find('.progress-bar');
-        var max = progressBar.attr('aria-valuemax');
-        var remaining = max - data.result.totals.reps;
-        result.find('.remaining').html(remaining);
-        result.find('.average').html(Math.round(remaining / parseInt(result.find('.days').html())));
-        var width = Math.min(Math.round(data.result.totals.reps / max * 100), 100) + '%';
-        progressBar.attr('aria-valuenow', data.result.totals.reps).css('width', width).html(width);
-        showSection(result, true);
+        localStorage.setItem('history', JSON.stringify(data));
+        renderHistory(container, data);
+        container.find('.loading-overlay').hide();
+        scrollToSection(result);
     }).fail(onError);
+}
+
+function show() {
+    $('#register').hide();
+    $('#result, #toplist').removeClass('hidden');
+    getHistory();
+    getToplist();
 }
 
 if(user) {
     user = JSON.parse(user);
-    getHistory();
-    getToplist();
+    show();
 } else {
     $('#register-form').submit(function(e) {
         e.preventDefault();
@@ -69,8 +90,8 @@ if(user) {
         }).done(function(data) {
             localStorage.setItem("user", JSON.stringify(data.result));
             user = data.result;
-            getHistory();
+            show();
         }).fail(onError)
     });
-    $('#register').show();
+    $('#register').removeClass('hidden');
 }
