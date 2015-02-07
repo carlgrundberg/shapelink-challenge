@@ -20,18 +20,20 @@ function renderToplist(el, data) {
 }
 
 function getToplist() {
-    var toplist = JSON.parse(localStorage.getItem('toplist'));
-    var container = $('#toplist');
-    if(toplist) {
-        renderToplist(container, toplist);
-    }
-    $.ajax({
-        url: '/toplist'
-    }).done(function(data) {
-        localStorage.setItem('toplist', JSON.stringify(data));
-        renderToplist(container, data);
-        container.find('.loading-overlay').hide();
-    }).fail(onError);
+    ['totals', 'weekly'].forEach(function(toplist) {
+        var totals = JSON.parse(localStorage.getItem('totals'));
+        var container = $('#toplists');
+        if (totals) {
+            renderToplist(container.find('totals'), totals);
+        }
+        $.ajax({
+            url: '/toplist/' + toplist
+        }).done(function (data) {
+            localStorage.setItem(toplist, JSON.stringify(data));
+            renderToplist(container.find('.'+toplist), data);
+            container.find('.loading-overlay').hide();
+        }).fail(onError);
+    });
 }
 
 function renderHistory(container, data) {
@@ -72,7 +74,7 @@ function getHistory() {
 
 function show() {
     $('#register').hide();
-    $('#result, #toplist').removeClass('hidden');
+    $('#result, #toplists').removeClass('hidden');
     getHistory();
     getToplist();
 }

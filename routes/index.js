@@ -51,7 +51,7 @@ function getExercisesForUser(user) {
     return deferred.promise;
 }
 
-function getResultForUser(user) {
+function getResultForUser(user, startDate, endDate) {
     if (!user.firstname) {
         storeUser({
             user_id: user.user_id,
@@ -68,11 +68,13 @@ function getResultForUser(user) {
         };
         var finished = 0;
         for(var i in exercises) {
-            shapelink.statistics().getStrengthExerciseHistory(user.token, exercises[i].id, config.startDate, config.endDate, function (data) {
+            shapelink.statistics().getStrengthExerciseHistory(user.token, exercises[i].id, startDate, endDate, function (data) {
                 result.reps += data.result.totals.reps;
                 if(++finished == exercises.length) {
                     deferred.resolve(result);
                 }
+            }, function(err) {
+                deferred.reject(err);
             });
         }
     }).fail(function(err) {
@@ -108,15 +110,24 @@ router.get('/history', function (req, res, next) {
     }
     var user = users[req.query.user_id];
 
-    getResultForUser(user).then(function(data) {
+    getResultForUser(user, config.startDate, config.endDate).then(function(data) {
         res.send(data);
     }).catch(next);
 });
 
-router.get('/toplist', function(req, res, next) {
+router.get('/toplist/:toplist', function(req, res, next) {
+    var startDate = config.startDate;
+    var endDate = config.endDate;
+    if(req.params.toplist == 'weekly') {
+        startDate = moment().subtract(1, 'weeks').startOf('isoWeek').format('YYYY-MM-DD');
+        endDate = moment().subtract(1, 'weeks').endOf('isoWeek').format('YYYY-MM-DD');
+    }
+    console.log(startDate);
+    console.log(endDate);
+
     var p = [];
     for(var user_id in users) {
-        p.push(getResultForUser(users[user_id]));
+        p.push(getResultForUser(users[user_id], startDate, endDate));
     }
     q.allSettled(p).done(function(results) {
         var r = [];
