@@ -27,6 +27,30 @@ function storeUser(user) {
     });
 }
 
+function getExercisesForUser(user) {
+    var deferred = q.defer();
+    var exercises = [];
+    shapelink.diary().getStrengthExercises(user.token, function (data) {
+        for (var i in data.result) {
+            for (var j in data.result[i]) {
+                var exercise = data.result[i][j];
+                if (exercise.name.toLowerCase().indexOf(config.exercise) != -1) {
+                    exercises.push(exercise);
+                }
+            }
+        }
+        if(exercises.length) {
+            deferred.resolve(exercises);
+        } else {
+            // Exercise not found
+            deferred.reject({error: 101, message: 'No exercise found'});
+        }
+    }, function (err) {
+        deferred.reject(err);
+    });
+    return deferred.promise;
+}
+
 function getResultForUser(user) {
     if (!user.firstname) {
         storeUser({
@@ -36,26 +60,25 @@ function getResultForUser(user) {
     }
 
     var deferred = q.defer();
-    shapelink.diary().getStrengthExercises(user.token, function (data) {
-        for (var i in data.result) {
-            for (var j in data.result[i]) {
-                var exercise = data.result[i][j];
-                if (exercise.name.toLowerCase().indexOf(config.exercise) != -1) {
-                    shapelink.statistics().getStrengthExerciseHistory(user.token, exercise.id, config.startDate, config.endDate, function (data) {
-                        data.user = _.pick(user, ['user_id', 'firstname', 'lastname']);
-                        deferred.resolve(data);
-                    }, function (err) {
-                        deferred.reject(err);
-                    });
-                    return;
+
+    getExercisesForUser(user).then(function(exercises) {
+        var result = {
+            user: _.pick(user, ['user_id', 'firstname', 'lastname']),
+            reps: 0
+        };
+        var finished = 0;
+        for(var i in exercises) {
+            shapelink.statistics().getStrengthExerciseHistory(user.token, exercises[i].id, config.startDate, config.endDate, function (data) {
+                result.reps += data.result.totals.reps;
+                if(++finished == exercises.length) {
+                    deferred.resolve(result);
                 }
-            }
+            });
         }
-        // Exercise not found
-        deferred.reject({error: 101, message: 'No exercise found'});
-    }, function (err) {
+    }).fail(function(err) {
         deferred.reject(err);
     });
+
     return deferred.promise;
 }
 /* GET home page. */
@@ -104,11 +127,11 @@ router.get('/toplist', function(req, res, next) {
             }
         }
         r.sort(function(a, b) {
-           return a.result.totals.reps < b.result.totals.reps ? 1 : -1;
+           return a.reps < b.reps ? 1 : -1;
         });
         var p = 0;
         for(var i in r) {
-            if(i == 0 || r[i].result.totals.reps != r[i-1].result.totals.reps) {
+            if(i == 0 || r[i].reps != r[i-1].reps) {
                 p++;
             }
             r[i].pos = p;

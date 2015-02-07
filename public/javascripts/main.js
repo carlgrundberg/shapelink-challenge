@@ -15,7 +15,7 @@ function scrollToSection(section) {
 function renderToplist(el, data) {
     var table = el.find('table').empty();
     for(var i in data) {
-        table.append('<tr><td>'+data[i].pos+'</td><td>'+data[i].user.firstname + ' ' + data[i].user.lastname +'</td><td>'+data[i].result.totals.reps+'</td></tr>');
+        table.append('<tr><td>'+data[i].pos+'</td><td>'+data[i].user.firstname + ' ' + data[i].user.lastname +'</td><td>'+data[i].reps+'</td></tr>');
     }
 }
 
@@ -35,19 +35,19 @@ function getToplist() {
 }
 
 function renderHistory(container, data) {
-    if(data.result.totals.reps == 0) {
+    if(data.reps == 0) {
         container.find('.title').html('You haven\'t done any burpees yet!');
     } else {
-        container.find('.title').html('You have done <strong>' + data.result.totals.reps + '</strong> burpees, keep on going!');
+        container.find('.title').html('You have done <strong>' + data.reps + '</strong> burpees, keep on going!');
     }
 
     var progressBar = container.find('.progress-bar');
     var max = progressBar.attr('aria-valuemax');
-    var remaining = max - data.result.totals.reps;
+    var remaining = max - data.reps;
     container.find('.remaining').html(remaining);
     container.find('.average').html(Math.round(remaining / parseInt(container.find('.days').html())));
-    var width = Math.min(Math.round(data.result.totals.reps / max * 100), 100) + '%';
-    progressBar.attr('aria-valuenow', data.result.totals.reps).css('width', width).html(width);
+    var width = Math.min(Math.round(data.reps / max * 100), 100) + '%';
+    progressBar.attr('aria-valuenow', data.reps).css('width', width).html(width);
 }
 
 function getHistory() {
@@ -66,7 +66,7 @@ function getHistory() {
         localStorage.setItem('history', JSON.stringify(data));
         renderHistory(container, data);
         container.find('.loading-overlay').hide();
-        scrollToSection(result);
+        scrollToSection(container);
     }).fail(onError);
 }
 
