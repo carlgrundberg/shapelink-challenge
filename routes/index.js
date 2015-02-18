@@ -122,8 +122,6 @@ router.get('/toplist/:toplist', function(req, res, next) {
         startDate = moment().subtract(1, 'weeks').startOf('isoWeek').format('YYYY-MM-DD');
         endDate = moment().subtract(1, 'weeks').endOf('isoWeek').format('YYYY-MM-DD');
     }
-    console.log(startDate);
-    console.log(endDate);
 
     var p = [];
     for(var user_id in users) {

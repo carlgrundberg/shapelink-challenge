@@ -32,6 +32,7 @@ function getToplist() {
             localStorage.setItem(toplist, JSON.stringify(data));
             renderToplist(container.find('.'+toplist), data);
             container.find('.loading-overlay').hide();
+            container.find('.carousel').slick('slickPrev');
         }).fail(onError);
     });
 }
