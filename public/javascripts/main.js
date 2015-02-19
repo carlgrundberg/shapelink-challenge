@@ -21,10 +21,10 @@ function renderToplist(el, data) {
 
 function getToplist() {
     ['totals', 'weekly'].forEach(function(toplist) {
-        var totals = JSON.parse(localStorage.getItem('totals'));
+        var list = JSON.parse(localStorage.getItem(toplist));
         var container = $('#toplists');
-        if (totals) {
-            renderToplist(container.find('totals'), totals);
+        if (list) {
+            renderToplist(container.find('.'+toplist), list);
         }
         $.ajax({
             url: '/toplist/' + toplist
