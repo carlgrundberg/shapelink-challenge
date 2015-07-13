@@ -1,6 +1,5 @@
 <div id="header" class="jumbotron text-center">
-    <h1>Are you ready for Toughest?</h1>
-    <p>We challenge you to do <strong>{{goal}}</strong> burpees before the race.</p>
+    <h1>Menmo Workout Challenge</h1>
 </div>
 
 <div id="register" class="section jumbotron hidden">
@@ -28,39 +27,27 @@
     </form>
 </div>
 
-<div class="row">
-    <div class="col-lg-6">
-        <div id="result" class="section jumbotron hidden text-center">
-            <h2 class="title">Loading your results</h2>
-            <p>You have <strong class="days">{{days}}</strong> days to do <strong class="remaining">{{goal}}</strong> burpees, that's about <strong class="average">alot of</strong> burpees a day.</p>
-            <div class="progress">
-                <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="{{goal}}"></div>
-            </div>
-            <div class="loading-overlay">
-                <i class="glyphicon glyphicon-refresh gly-spin"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div id="toplists" class="section jumbotron hidden">
-            <div class="carousel" data-slick='{"arrows":false, "initialSlide": 1}'>
-                <div class="totals">
-                    <h2 class="text-center">Totals</h2>
+<div class="section jumbotron hidden toplist totals">
+   <h2 class="text-center">Totals</h2>
+   <table class="table table-striped"></table>
+   <div class="loading-overlay">
+       <i class="glyphicon glyphicon-refresh gly-spin"></i>
+   </div>
+</div>
 
-                    <table class="table table-striped"></table>
-                </div>
-                <div class="weekly">
-                    <h2 class="text-center">Last week</h2>
-
-                    <table class="table table-striped"></table>
-                </div>
-            </div>
-            <div class="loading-overlay">
-                <i class="glyphicon glyphicon-refresh gly-spin"></i>
-            </div>
-        </div>
+<div class="section jumbotron hidden toplist monthly">
+    <h2 class="text-center">Last Month</h2>
+    <table class="table table-striped"></table>
+    <div class="loading-overlay">
+        <i class="glyphicon glyphicon-refresh gly-spin"></i>
     </div>
 </div>
 
-
+<div class="section jumbotron hidden toplist weekly">
+    <h2 class="text-center">Last Week</h2>
+    <table class="table table-striped"></table>
+    <div class="loading-overlay">
+        <i class="glyphicon glyphicon-refresh gly-spin"></i>
+    </div>
+</div>
 

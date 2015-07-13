@@ -27,58 +27,49 @@ function storeUser(user) {
     });
 }
 
-function getExercisesForUser(user) {
+function getDayResultForUser(user, day) {
     var deferred = q.defer();
-    var exercises = [];
-    shapelink.diary().getStrengthExercises(user.token, function (data) {
-        for (var i in data.result) {
-            for (var j in data.result[i]) {
-                var exercise = data.result[i][j];
-                if (exercise.name.toLowerCase().indexOf(config.exercise) != -1) {
-                    exercises.push(exercise);
-                }
-            }
+
+    shapelink.diary().getDay(user.token, day, function(data) {
+        var result = 0;
+        for(var i = 0; i < data.result.done_workouts.length; i++) {
+            var workout = data.result.done_workouts[i];
+            result += workout.kcal;
         }
-        if(exercises.length) {
-            deferred.resolve(exercises);
-        } else {
-            // Exercise not found
-            deferred.reject({error: 101, message: 'No exercise found'});
-        }
-    }, function (err) {
+        deferred.resolve({day: day, result: result});
+    }, function(err) {
         deferred.reject(err);
     });
+
     return deferred.promise;
 }
 
 function getResultForUser(user, startDate, endDate) {
-    if (!user.firstname) {
-        storeUser({
-            user_id: user.user_id,
-            token: user.token
-        });
+    var deferred = q.defer();
+    var p = [];
+    var now = moment();
+
+    for (var d = moment(startDate); d.isBefore(endDate) && d.isBefore(now); d = d.add(1, 'days')) {
+        var day = d.format('YYYY-MM-DD');
+        p.push(getDayResultForUser(user, day));
     }
 
-    var deferred = q.defer();
-
-    getExercisesForUser(user).then(function(exercises) {
+    q.allSettled(p).done(function(results) {
         var result = {
             user: _.pick(user, ['user_id', 'firstname', 'lastname']),
-            reps: 0
+            total: 0,
+            days: []
         };
-        var finished = 0;
-        for(var i in exercises) {
-            shapelink.statistics().getStrengthExerciseHistory(user.token, exercises[i].id, startDate, endDate, function (data) {
-                result.reps += data.result.totals.reps;
-                if(++finished == exercises.length) {
-                    deferred.resolve(result);
-                }
-            }, function(err) {
-                deferred.reject(err);
-            });
+
+        for(var i in results) {
+            if(results[i].state == 'fulfilled') {
+                var r = results[i].value;
+                result.days.push(r);
+                result.total += r.result;
+            }
         }
-    }).fail(function(err) {
-        deferred.reject(err);
+
+        deferred.resolve(result);
     });
 
     return deferred.promise;
@@ -101,26 +92,12 @@ router.post('/login', function (req, res) {
     });
 });
 
-router.get('/history', function (req, res, next) {
-    if (!users[req.query.user_id] || !users[req.query.user_id].firstname) {
-        storeUser({
-            user_id: req.query.user_id,
-            token: req.query.token
-        });
-    }
-    var user = users[req.query.user_id];
-
-    getResultForUser(user, config.startDate, config.endDate).then(function(data) {
-        res.send(data);
-    }).catch(next);
-});
-
-router.get('/toplist/:toplist', function(req, res, next) {
-    var startDate = config.startDate;
-    var endDate = config.endDate;
-    if(req.params.toplist == 'weekly') {
-        startDate = moment().subtract(1, 'weeks').startOf('isoWeek').format('YYYY-MM-DD');
-        endDate = moment().subtract(1, 'weeks').endOf('isoWeek').format('YYYY-MM-DD');
+router.get('/history/:range', function(req, res, next) {
+    var startDate = moment(config.startDate);
+    var endDate = moment(config.endDate);
+    if(req.params.range == 'weekly') {
+        startDate = moment().subtract(1, 'weeks').startOf('isoWeek');
+        endDate = moment().subtract(1, 'weeks').endOf('isoWeek');
     }
 
     var p = [];
@@ -136,12 +113,12 @@ router.get('/toplist/:toplist', function(req, res, next) {
             }
         }
         r.sort(function(a, b) {
-           return a.reps < b.reps ? 1 : -1;
+           return a.total < b.total ? 1 : -1;
         });
         var p = 0;
         for(var i in r) {
-            if(i == 0 || r[i].reps != r[i-1].reps) {
-                p++;
+            if(i == 0 || r[i].total != r[i-1].total) {
+                p = parseInt(i) + 1;
             }
             r[i].pos = p;
         }
