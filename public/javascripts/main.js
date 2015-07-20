@@ -14,6 +14,7 @@ function scrollToSection(section) {
 
 function renderToplist(el, data) {
     var table = el.find('table').empty();
+    table.append('<tr><th>Pos</th><th>Name</th><th>Points</th></tr>tr>');
     for(var i in data) {
         table.append('<tr><td>'+data[i].pos+'</td><td>'+data[i].user.firstname + ' ' + data[i].user.lastname +'</td><td>'+data[i].total+'</td></tr>');
     }
@@ -36,10 +37,21 @@ function getToplist() {
     });
 }
 
+function getChallenge() {
+    $.ajax({
+        url: '/challenge',
+        data: {
+            token: user.token
+        }
+    }).done(function(data) {
+        console.log(data);
+    }).fail(onError);
+}
 
 function show() {
     $('#register').hide();
     $('.toplist').removeClass('hidden');
+    getChallenge();
     getToplist();
 }
 
