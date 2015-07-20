@@ -101,12 +101,30 @@ router.get('/challenge', function (req, res, next) {
 });
 
 router.get('/history/:range', function (req, res, next) {
-    var startDate = moment(config.startDate);
-    var endDate = moment(config.endDate);
+    var configStartDate = moment(config.startDate);
+    var configEndDate = moment(config.endDate);
+    var startDate = false;
+    var endDate = false;
+
     if (req.params.range == 'weekly') {
         startDate = moment().subtract(1, 'weeks').startOf('isoWeek');
         endDate = moment().subtract(1, 'weeks').endOf('isoWeek');
     }
+    if(req.params.range == 'monthly') {
+        startDate = moment().subtract(1, 'month').startOf('isoMonth');
+        endDate = moment().subtract(1, 'month').endOf('isoMonth');
+    }
+
+    if(!startDate || startDate.isBefore(configStartDate)) {
+        startDate = configStartDate;
+    }
+
+    if(!endDate || endDate.isAfter(configEndDate)) {
+        endDate = configEndDate;
+    }
+
+    console.log(startDate.toString());
+    console.log(endDate.toString());
 
     var p = [];
     for (var user_id in users) {
