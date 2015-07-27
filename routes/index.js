@@ -17,29 +17,35 @@ var users = storage.getItemSync('users') || {};
 
 
 function storeUser(user) {
-    shapelink.user().get(user.token, user.user_id, function (data) {
-        user.firstname = data.result.user.firstname;
-        user.lastname = data.result.user.lastname;
-        users[user.user_id] = user;
-        storage.setItem('users', users);
-    }, function (err) {
-        console.log(err);
-    });
+    shapelink.user.get({user_token: user.token, user_id: user.user_id}).then(
+        function (data) {
+            user.firstname = data.result.user.firstname;
+            user.lastname = data.result.user.lastname;
+            users[user.user_id] = user;
+            storage.setItem('users', users);
+        },
+        function (err) {
+            console.log(err);
+        }
+    );
 }
 
-function getDayResultForUser(user, day) {
+function getDayResultForUser(user, date) {
     var deferred = q.defer();
 
-    shapelink.diary().getDay(user.token, day, function (data) {
-        var result = 0;
-        for (var i = 0; i < data.result.done_workouts.length; i++) {
-            var workout = data.result.done_workouts[i];
-            result += workout.kcal;
+    shapelink.diary.getDay({ user_token: user.token, date: date }).then(
+        function (data) {
+            var result = 0;
+            for (var i = 0; i < data.result.done_workouts.length; i++) {
+                var workout = data.result.done_workouts[i];
+                result += workout.kcal;
+            }
+            deferred.resolve({date: date, result: result});
+        },
+        function (err) {
+            deferred.reject(err);
         }
-        deferred.resolve({day: day, result: result});
-    }, function (err) {
-        deferred.reject(err);
-    });
+    );
 
     return deferred.promise;
 }
@@ -50,22 +56,22 @@ function getResultForUser(user, startDate, endDate) {
     var now = moment();
 
     for (var d = moment(startDate); d.isBefore(endDate) && d.isBefore(now); d = d.add(1, 'days')) {
-        var day = d.format('YYYY-MM-DD');
-        p.push(getDayResultForUser(user, day));
+        var date = d.format('YYYY-MM-DD');
+        p.push(getDayResultForUser(user, date));
     }
 
     q.allSettled(p).done(function (results) {
         var result = {
             user: _.pick(user, ['user_id', 'firstname', 'lastname']),
             total: 0,
-            days: []
+            dates: []
         };
 
         for (var i in results) {
             if (results[i].state == 'fulfilled') {
                 var r = results[i].value;
-                result.days.push(r);
-                result.total += Math.round(r.result / 10);
+                result.dates.push(r);
+                result.total += r.result;
             }
         }
 
@@ -84,20 +90,24 @@ router.get('/', function (req, res) {
 });
 
 router.post('/login', function (req, res) {
-    shapelink.auth().requireToken(req.body.username, req.body.password, function (data) {
-        storeUser(data.result);
-        res.send(data);
-    }, function (err) {
-        res.status(400).send(err);
-    });
+    shapelink.auth.requireToken({username: req.body.username, password: req.body.password }).then(
+        function (data) {
+            storeUser(data.result);
+            res.send(data);
+        },
+        function (err) {
+            res.status(400).send(err);
+        }
+    );
 });
 
 router.get('/challenge', function (req, res, next) {
-    shapelink.challenge().getChallenge(req.query.token, config.challenge, function (data) {
-        res.send(data);
-    }, function (err) {
-        next(err);
-    })
+    shapelink.challenge.getChallenge({user_token: req.query.token, challenge_id: config.challenge}).then(
+        function (data) {
+            res.send(data);
+        },
+        next
+    );
 });
 
 router.get('/history/:range', function (req, res, next) {
@@ -123,38 +133,47 @@ router.get('/history/:range', function (req, res, next) {
         endDate = configEndDate;
     }
 
-    console.log(startDate.toString());
-    console.log(endDate.toString());
-
-    var p = [];
-    for (var user_id in users) {
-        p.push(getResultForUser(users[user_id], startDate, endDate));
-    }
-    q.allSettled(p).done(function (results) {
-        var r = [];
-        for (var i in results) {
-            if (results[i].state == 'fulfilled') {
-                var result = results[i].value;
-                r.push(result)
+    shapelink.challenge.getChallenge({user_token: req.query.token, challenge_id: config.challenge}).then(
+        function(data) {
+            var r = [];
+            var p = [];
+            for(var i in data.result.results.data) {
+                var participant = data.result.results.data[i];
+                var user = participant.user;
+                if(users[user.id]) {
+                    var resultForUser = getResultForUser(users[user.id], startDate, endDate);
+                    resultForUser.then(function(result) {
+                        r.push(result);
+                    });
+                    p.push(resultForUser);
+                } else {
+                    r.push({user: { user_id: user.id, firstname: user.username, lastname: '' }, total: participant.value});
+                }
             }
-        }
-        r.sort(function (a, b) {
-            return a.total < b.total ? 1 : -1;
-        });
-        var p = 0;
-        for (var i in r) {
-            if (i == 0 || r[i].total != r[i - 1].total) {
-                p = parseInt(i) + 1;
+            if(p.length > 0) {
+                q.allSettled(p).done(function (results) {
+                    r.sort(function (a, b) {
+                        return a.total < b.total ? 1 : -1;
+                    });
+                    var p = 0;
+                    for (var i in r) {
+                        if (i == 0 || r[i].total != r[i - 1].total) {
+                            p = parseInt(i) + 1;
+                        }
+                        r[i].pos = p;
+                    }
+                    res.send(r);
+                }, function (err) {
+                    console.log(err);
+                    if (err.error != 101) {
+                        next(err);
+                    }
+                });
+            } else {
+                res.send(r);
             }
-            r[i].pos = p;
-        }
-        res.send(r);
-    }, function (err) {
-        console.log(err);
-        if (err.error != 101) {
-            next(err);
-        }
-    });
+       }, next
+    );
 });
 
 module.exports = router;

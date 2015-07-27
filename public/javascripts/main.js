@@ -21,14 +21,17 @@ function renderToplist(el, data) {
 }
 
 function getToplist() {
-    ['totals', 'monthly', 'weekly'].forEach(function(toplist) {
+    ['totals'].forEach(function(toplist) {
         var list = JSON.parse(localStorage.getItem(toplist));
         var container = $('.toplist.'+toplist);
         if (list) {
             renderToplist(container, list);
         }
         $.ajax({
-            url: '/history/' + toplist
+            url: '/history/' + toplist,
+            data: {
+                token: user.token
+            }
         }).done(function (data) {
             localStorage.setItem(toplist, JSON.stringify(data));
             renderToplist(container, data);
@@ -51,7 +54,7 @@ function getChallenge() {
 function show() {
     $('#register').hide();
     $('.toplist').removeClass('hidden');
-    getChallenge();
+    //getChallenge();
     getToplist();
 }
 
