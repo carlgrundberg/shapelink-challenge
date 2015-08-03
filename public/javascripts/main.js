@@ -13,10 +13,12 @@ function scrollToSection(section) {
 }
 
 function renderToplist(el, data) {
+    el.find('h2').html(data.label);
     var table = el.find('table').empty();
     table.append('<tr><th>Pos</th><th>Name</th><th>Points</th></tr>tr>');
-    for(var i in data) {
-        table.append('<tr><td>'+data[i].pos+'</td><td>'+data[i].user.firstname + ' ' + data[i].user.lastname +'</td><td>'+data[i].total+'</td></tr>');
+    for(var i in data.results) {
+        var res = data.results[i];
+        table.append('<tr><td>'+res.pos+'</td><td>'+res.user.firstname + ' ' + res.user.lastname +'</td><td>'+res.total+'</td></tr>');
     }
 }
 
@@ -47,14 +49,14 @@ function getChallenge() {
             token: user.token
         }
     }).done(function(data) {
-        console.log(data);
+        $('#header h1').html(data.result.title);
     }).fail(onError);
 }
 
 function show() {
     $('#register').hide();
     $('.toplist').removeClass('hidden');
-    //getChallenge();
+    getChallenge();
     getToplist();
 }
 

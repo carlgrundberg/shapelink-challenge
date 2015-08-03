@@ -42,9 +42,7 @@ function getDayResultForUser(user, date) {
             }
             deferred.resolve({date: date, result: result});
         },
-        function (err) {
-            deferred.reject(err);
-        }
+        deferred.reject
     );
 
     return deferred.promise;
@@ -80,12 +78,29 @@ function getResultForUser(user, startDate, endDate) {
 
     return deferred.promise;
 }
+
+function fixResults(r, label) {
+    r.sort(function (a, b) {
+        return a.total < b.total ? 1 : -1;
+    });
+    var p = 0;
+    for (var i in r) {
+        if (i == 0 || r[i].total != r[i - 1].total) {
+            p = parseInt(i) + 1;
+        }
+        r[i].pos = p;
+        r[i].total = Math.floor(r[i].total / 10);
+    }
+    return {
+        results: r,
+        label: label
+    };
+}
+
 /* GET home page. */
 router.get('/', function (req, res) {
     res.render('index', {
-        title: config.name,
-        goal: config.goal,
-        days: moment(config.endDate).diff(moment(), 'days')
+        title: 'Shapelink Challenge'
     });
 });
 
@@ -115,14 +130,17 @@ router.get('/history/:range', function (req, res, next) {
     var configEndDate = moment(config.endDate);
     var startDate = false;
     var endDate = false;
+    var label = 'Standings';
 
     if (req.params.range == 'weekly') {
         startDate = moment().subtract(1, 'weeks').startOf('isoWeek');
         endDate = moment().subtract(1, 'weeks').endOf('isoWeek');
+        label = 'Week ' + startDate.format('w');
     }
     if(req.params.range == 'monthly') {
         startDate = moment().subtract(1, 'month').startOf('month');
         endDate = moment().subtract(1, 'month').endOf('month');
+        label = startDate.format('MMMM');
     }
 
     if(!startDate || startDate.isBefore(configStartDate)) {
@@ -140,13 +158,10 @@ router.get('/history/:range', function (req, res, next) {
             for(var i in data.result.results.data) {
                 var participant = data.result.results.data[i];
                 var user = participant.user;
-                console.log(user);
-                if(users[user.id]) {
+                if(req.params.range == 'totals') {
+                    r.push({user: { user_id: user.id, firstname: user.username, lastname: '' }, total: participant.value});
+                } else if(users[user.id]) {
                     p.push(getResultForUser(users[user.id], startDate, endDate));
-                } else {
-                        if(req.params.range == 'totals') {
-                        r.push({user: { user_id: user.id, firstname: user.username, lastname: '' }, total: participant.value});
-                    }
                 }
             }
             if(p.length > 0) {
@@ -156,26 +171,10 @@ router.get('/history/:range', function (req, res, next) {
                             r.push(results[i].value);
                         }
                     }
-
-                    r.sort(function (a, b) {
-                        return a.total < b.total ? 1 : -1;
-                    });
-                    var p = 0;
-                    for (var i in r) {
-                        if (i == 0 || r[i].total != r[i - 1].total) {
-                            p = parseInt(i) + 1;
-                        }
-                        r[i].pos = p;
-                    }
-                    res.send(r);
-                }, function (err) {
-                    console.log(err);
-                    if (err.error != 101) {
-                        next(err);
-                    }
-                });
+                    res.send(fixResults(r, label));
+                }, next);
             } else {
-                res.send(r);
+                res.send(fixResults(r, label));
             }
        }, next
     );
