@@ -21,7 +21,7 @@ function renderToplist(el, data) {
 }
 
 function getToplist() {
-    ['totals'].forEach(function(toplist) {
+    ['totals', 'monthly', 'weekly'].forEach(function(toplist) {
         var list = JSON.parse(localStorage.getItem(toplist));
         var container = $('.toplist.'+toplist);
         if (list) {

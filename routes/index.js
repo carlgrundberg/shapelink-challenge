@@ -6,7 +6,7 @@ var config = require('../config.json');
 var _ = require('underscore');
 
 var Shapelink = require('../../shapelink-node-sdk').Shapelink;
-var shapelink = new Shapelink(config.shapelink.apiKey, config.shapelink.secret, 'sv', true);
+var shapelink = new Shapelink(config.shapelink.apiKey, config.shapelink.secret, 'sv', {}, true);
 
 var storage = require('node-persist');
 storage.initSync({
@@ -121,8 +121,8 @@ router.get('/history/:range', function (req, res, next) {
         endDate = moment().subtract(1, 'weeks').endOf('isoWeek');
     }
     if(req.params.range == 'monthly') {
-        startDate = moment().subtract(1, 'month').startOf('isoMonth');
-        endDate = moment().subtract(1, 'month').endOf('isoMonth');
+        startDate = moment().subtract(1, 'month').startOf('month');
+        endDate = moment().subtract(1, 'month').endOf('month');
     }
 
     if(!startDate || startDate.isBefore(configStartDate)) {
@@ -140,18 +140,23 @@ router.get('/history/:range', function (req, res, next) {
             for(var i in data.result.results.data) {
                 var participant = data.result.results.data[i];
                 var user = participant.user;
+                console.log(user);
                 if(users[user.id]) {
-                    var resultForUser = getResultForUser(users[user.id], startDate, endDate);
-                    resultForUser.then(function(result) {
-                        r.push(result);
-                    });
-                    p.push(resultForUser);
+                    p.push(getResultForUser(users[user.id], startDate, endDate));
                 } else {
-                    r.push({user: { user_id: user.id, firstname: user.username, lastname: '' }, total: participant.value});
+                        if(req.params.range == 'totals') {
+                        r.push({user: { user_id: user.id, firstname: user.username, lastname: '' }, total: participant.value});
+                    }
                 }
             }
             if(p.length > 0) {
                 q.allSettled(p).done(function (results) {
+                    for(var i in results) {
+                        if (results[i].state == 'fulfilled') {
+                            r.push(results[i].value);
+                        }
+                    }
+
                     r.sort(function (a, b) {
                         return a.total < b.total ? 1 : -1;
                     });
