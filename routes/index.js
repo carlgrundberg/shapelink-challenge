@@ -5,7 +5,7 @@ var router = express.Router();
 var config = require('../config.json');
 var _ = require('underscore');
 
-var Shapelink = require('../../shapelink-node-sdk').Shapelink;
+var Shapelink = require('shapelink-node-sdk').Shapelink;
 var shapelink = new Shapelink(config.shapelink.apiKey, config.shapelink.secret, 'sv', {}, true);
 
 var storage = require('node-persist');

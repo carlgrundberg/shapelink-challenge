@@ -11,13 +11,14 @@
     "debug": "~2.1.1",
     "express": "~4.11.0",
     "hbs": "~2.8.0",
-    "morgan": "~1.5.1",
-    "serve-favicon": "~2.2.0",
-    "sorto": "0.0.2",
-    "node-persist": "0.0.3",
     "moment": "^2.9.0",
+    "morgan": "~1.5.1",
+    "node-persist": "0.0.3",
     "q": "^1.1.2",
-    "underscore": "^1.7.0",
-    "slick-carousel": "^1.4.1"
+    "serve-favicon": "~2.2.0",
+    "shapelink-node-sdk": "^1.0.0",
+    "slick-carousel": "^1.4.1",
+    "sorto": "0.0.2",
+    "underscore": "^1.7.0"
   }
 }
