@@ -2,11 +2,15 @@ var q = require('q');
 var express = require('express');
 var moment = require('moment');
 var router = express.Router();
-var config = require('../config.json');
 var _ = require('underscore');
+var config = {
+    challenge: 62937,
+    startDate: "2015-07-01",
+    endDate: "2015-12-31"
+};
 
 var Shapelink = require('shapelink-node-sdk').Shapelink;
-var shapelink = new Shapelink(config.shapelink.apiKey, config.shapelink.secret, 'sv', {}, true);
+var shapelink = new Shapelink(process.env.SHAPELINK_KEY, process.env.SHAPELINK_SECRET, 'sv', {}, true);
 
 var storage = require('node-persist');
 storage.initSync({
