@@ -49,7 +49,7 @@ function getChallenge() {
             token: user.token
         }
     }).done(function(data) {
-        $('#header h1').html(data.result.title);
+        $('#header h1').html(data.title);
     }).fail(onError);
 }
 
