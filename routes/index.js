@@ -3,7 +3,12 @@ var express = require('express');
 var moment = require('moment');
 var router = express.Router();
 var _ = require('underscore');
-var config = require('../config.json');
+var config;
+try{
+    config = require('../config.json')
+} catch(err){
+    config = {}
+}
 config = _.extend(config, {
     challenge: 62937,
     startDate: "2015-07-01",
