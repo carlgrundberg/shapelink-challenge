@@ -4,9 +4,9 @@ var moment = require('moment');
 var router = express.Router();
 var _ = require('underscore');
 var config;
-try{
+try {
     config = require('../config.json')
-} catch(err){
+} catch (err) {
     config = {}
 }
 config = _.extend(config, {
@@ -43,12 +43,16 @@ function storeUser(user) {
 function getDayResultForUser(user, date) {
     var deferred = q.defer();
 
-    db.results.findOne({user_token: user.token, date: date, updated_at: { $gte: moment().subtract(1, 'hour').toDate()}}, function (err, result) {
+    db.results.findOne({
+        user_token: user.token,
+        date: date,
+        updated_at: {$gte: moment().subtract(1, 'hour').toDate()}
+    }, function (err, result) {
         if (err) {
             deferred.reject(err);
         }
 
-        if(!result) {
+        if (!result) {
             shapelink.diary.getDay({user_token: user.token, date: date}).then(
                 function (data) {
                     var total = 0;
@@ -71,7 +75,6 @@ function getDayResultForUser(user, date) {
             deferred.resolve(result);
         }
     });
-
 
 
     return deferred.promise;
@@ -147,7 +150,7 @@ router.get('/', function (req, res) {
 router.post('/login', function (req, res, next) {
     shapelink.auth.requireToken({username: req.body.username, password: req.body.password}).then(
         function (data) {
-            storeUser(data.result).then(function() {
+            storeUser(data.result).then(function () {
                 res.send(data)
             }, next);
         },
@@ -160,13 +163,16 @@ router.post('/login', function (req, res, next) {
 function getChallenge(challenge_id, token) {
     var deferred = q.defer();
 
-    db.challenges.findOne({challenge_id: challenge_id, updated_at: { $gte: moment().subtract(1, 'hour').toDate()}}, function(err, challenge) {
-        if(err) {
+    db.challenges.findOne({
+        challenge_id: challenge_id,
+        updated_at: {$gte: moment().subtract(1, 'hour').toDate()}
+    }, function (err, challenge) {
+        if (err) {
             deferred.reject(err);
             return;
         }
 
-        if(!challenge) {
+        if (!challenge) {
             shapelink.challenge.getChallenge({user_token: token, challenge_id: config.challenge}).then(
                 function (data) {
                     var challenge = _.extend(data.result, {updated_at: new Date(), challenge_id: data.result.id});
@@ -186,18 +192,18 @@ function getChallenge(challenge_id, token) {
 
 router.get('/challenge', function (req, res, next) {
     // do this since we in the first version didnt save users to db
-    var resFn = function() {
-        getChallenge(config.challenge, req.query.user_token).then(function(challenge) {
+    var resFn = function () {
+        getChallenge(config.challenge, req.query.token).then(function (challenge) {
             res.send(challenge);
         }, next);
     };
 
-    db.users.findOne({token: req.query.user_token}, function(err, user) {
-       if(!user) {
-           storeUser(req.query).then(resFn)
-       } else {
-           resFn();
-       }
+    db.users.findOne({token: req.query.token}, function (err, user) {
+        if (!user) {
+            storeUser(req.query).then(resFn)
+        } else {
+            resFn();
+        }
     });
 
 });
@@ -259,26 +265,11 @@ function getResultsForChallenge(challenge, range) {
 }
 
 router.get('/history/:range', function (req, res, next) {
-
-    db.challenges.findOne({challenge_id: config.challenge}, function(err, challenge) {
-        if (err) {
-            next(err);
-        }
-
-        if (!challenge) {
-            shapelink.challenge.getChallenge({user_token: req.query.token, challenge_id: config.challenge}).then(
-                function (data) {
-                    getResultsForChallenge(data.result, req.params.range).then(function(results) {
-                        res.send(results);
-                    }, next);
-                }, next
-            );
-        } else {
-            getResultsForChallenge(challenge, req.params.range).then(function(results) {
-                res.send(results);
-            }, next);;
-        }
-    });
+    getChallenge(config.challenge, req.query.token).then(function (challenge) {
+        getResultsForChallenge(challenge, req.params.range).then(function (results) {
+            res.send(results);
+        }, next);
+    }, next);
 });
 
 module.exports = router;
