@@ -45,8 +45,7 @@ function getDayResultForUser(user, date) {
 
     db.results.findOne({
         user_token: user.token,
-        date: date,
-        updated_at: {$gte: moment().subtract(1, 'hour').toDate()}
+        date: date
     }, function (err, result) {
         if (err) {
             deferred.reject(err);
