@@ -43,11 +43,9 @@ function getToplist() {
 }
 
 function getChallenge() {
-    $.ajax({
+    return $.ajax({
         url: '/challenge',
-        data: {
-            token: user.token
-        }
+        data: user
     }).done(function(data) {
         $('#header h1').html(data.title);
     }).fail(onError);
@@ -56,8 +54,7 @@ function getChallenge() {
 function show() {
     $('#register').hide();
     $('.toplist').removeClass('hidden');
-    getChallenge();
-    getToplist();
+    getChallenge().done(getToplist);
 }
 
 if(user) {

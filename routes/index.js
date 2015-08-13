@@ -21,6 +21,7 @@ var db = require('mongojs')(process.env.MONGOLAB_URI || 'localhost/shapelink-cha
 db.users.createIndex({'token': 1}, {unique: true});
 
 function storeUser(user) {
+    var deferred = q.defer();
     shapelink.user.get({user_token: user.token, user_id: user.user_id}).then(
         function (data) {
             user = _.extend(
@@ -31,13 +32,12 @@ function storeUser(user) {
             db.users.update(
                 {token: user.token},
                 user,
-                {upsert: true}
+                {upsert: true},
+                deferred.resolve
             );
-        },
-        function (err) {
-            console.log(err);
-        }
+        }, deferred.reject
     );
+    return deferred.promise;
 }
 
 function getDayResultForUser(user, date) {
@@ -144,11 +144,12 @@ router.get('/', function (req, res) {
     });
 });
 
-router.post('/login', function (req, res) {
+router.post('/login', function (req, res, next) {
     shapelink.auth.requireToken({username: req.body.username, password: req.body.password}).then(
         function (data) {
-            storeUser(data.result);
-            res.send(data);
+            storeUser(data.result).then(function() {
+                res.send(data)
+            }, next);
         },
         function (err) {
             res.status(400).send(err);
@@ -156,26 +157,49 @@ router.post('/login', function (req, res) {
     );
 });
 
-router.get('/challenge', function (req, res, next) {
-    db.challenges.findOne({challenge_id: config.challenge, updated_at: { $gte: moment().subtract(1, 'hour').toDate()}}, function(err, challenge) {
+function getChallenge(challenge_id, token) {
+    var deferred = q.defer();
+
+    db.challenges.findOne({challenge_id: challenge_id, updated_at: { $gte: moment().subtract(1, 'hour').toDate()}}, function(err, challenge) {
         if(err) {
-            next(err);
+            deferred.reject(err);
+            return;
         }
 
         if(!challenge) {
-            shapelink.challenge.getChallenge({user_token: req.query.token, challenge_id: config.challenge}).then(
+            shapelink.challenge.getChallenge({user_token: token, challenge_id: config.challenge}).then(
                 function (data) {
                     var challenge = _.extend(data.result, {updated_at: new Date(), challenge_id: data.result.id});
                     delete challenge.id;
                     db.challenges.update({challenge_id: config.challenge}, challenge, {upsert: true});
-                    res.send(challenge);
+                    deferred.resolve(challenge);
                 },
-                next
+                deferred.reject
             );
         } else {
-            res.send(challenge);
+            deferred.resolve(challenge);
         }
     });
+
+    return deferred.promise;
+}
+
+router.get('/challenge', function (req, res, next) {
+    // do this since we in the first version didnt save users to db
+    var resFn = function() {
+        getChallenge(config.challenge, req.query.user_token).then(function(challenge) {
+            res.send(challenge);
+        }, next);
+    };
+
+    db.users.findOne({token: req.query.user_token}, function(err, user) {
+       if(!user) {
+           storeUser(req.query).then(resFn)
+       } else {
+           resFn();
+       }
+    });
+
 });
 
 function getResultsForChallenge(challenge, range) {
