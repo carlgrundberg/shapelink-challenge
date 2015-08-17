@@ -45,7 +45,8 @@ function getDayResultForUser(user, date) {
 
     db.results.findOne({
         user_token: user.token,
-        date: date
+        date: date,
+        updated_at: { $gte: moment().subtract(10, 'minutes').toDate() }
     }, function (err, result) {
         if (err) {
             deferred.reject(err);
@@ -164,7 +165,7 @@ function getChallenge(challenge_id, token) {
 
     db.challenges.findOne({
         challenge_id: challenge_id,
-        updated_at: {$gte: moment().subtract(1, 'hour').toDate()}
+        updated_at: {$gte: moment().subtract(1, 'hours').toDate()}
     }, function (err, challenge) {
         if (err) {
             deferred.reject(err);
