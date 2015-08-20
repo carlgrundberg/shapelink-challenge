@@ -84,20 +84,26 @@ function getDayResultForUser(user, date) {
     return deferred.promise;
 }
 
-function getResultForUser(user, startDate, endDate) {
+function getResultForUser(participant, startDate, endDate) {
     var deferred = q.defer();
     var p = [];
     var now = moment();
-    db.users.findOne({username: user.username}, function (err, user) {
+    db.users.findOne({username: participant.user.username}, function (err, user) {
         if (err) {
             deferred.reject(err);
             return;
         }
 
         if (!user) {
-            deferred.reject();
+            user = participant.user;
+            deferred.resolve({
+                user: {user_id: user.id, firstname: user.username, lastname: '', registered: false},
+                total: participant.value
+            });
             return;
         }
+
+        user.registered = true;
 
         for (var d = moment(startDate); d.isBefore(endDate) && d.isBefore(now); d = d.add(1, 'days')) {
             var date = d.format('YYYY-MM-DD');
@@ -106,7 +112,7 @@ function getResultForUser(user, startDate, endDate) {
 
         q.allSettled(p).done(function (results) {
             var result = {
-                user: _.pick(user, ['user_id', 'firstname', 'lastname']),
+                user: _.pick(user, ['user_id', 'firstname', 'lastname', 'registered']),
                 total: 0,
                 dates: []
             };
@@ -243,21 +249,16 @@ function getResultsForChallenge(challenge, range) {
     var p = [];
     for (var i in challenge.results.data) {
         var participant = challenge.results.data[i];
-        var user = participant.user;
-        if (range == 'totals') {
-            r.push({
-                user: {user_id: user.id, firstname: user.username, lastname: ''},
-                total: participant.value
-            });
-        } else {
-            p.push(getResultForUser(user, startDate, endDate));
-        }
+        p.push(getResultForUser(participant, startDate, endDate));
     }
     if (p.length > 0) {
         q.allSettled(p).done(function (results) {
             for (var i in results) {
                 if (results[i].state == 'fulfilled') {
-                    r.push(results[i].value);
+                    var result = results[i].value;
+                    if(range == 'totals' || result.user.registered) {
+                        r.push(result);
+                    }
                 }
             }
             deferred.resolve(fixResults(r, label));
