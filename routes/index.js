@@ -16,6 +16,8 @@ config = _.extend(config, {
 });
 var Shapelink = require('shapelink-node-sdk').Shapelink;
 var shapelink = new Shapelink(process.env.SHAPELINK_KEY || config.shapelink.apiKey, process.env.SHAPELINK_SECRET || config.shapelink.secret, 'sv', {}, true);
+var RateLimiter = require('limiter').RateLimiter;
+var limiter = new RateLimiter(10, 'second');
 
 var db = require('mongojs')(process.env.MONGOLAB_URI || 'localhost/shapelink-challenge', ['users', 'results', 'challenges']);
 db.users.createIndex({'token': 1}, {unique: true});
@@ -45,31 +47,34 @@ function getDayResultForUser(user, date) {
 
     db.results.findOne({
         user_token: user.token,
-        date: date
+        date: date,
+        updated_at: { $gte: moment().subtract(10, 'minutes').toDate() }
     }, function (err, result) {
         if (err) {
             deferred.reject(err);
         }
 
         if (!result) {
-            shapelink.diary.getDay({user_token: user.token, date: date}).then(
-                function (data) {
-                    var total = 0;
-                    for (var i = 0; i < data.result.done_workouts.length; i++) {
-                        var workout = data.result.done_workouts[i];
-                        total += workout.kcal;
-                    }
-                    var r = {
-                        user_token: user.token,
-                        date: date,
-                        result: total,
-                        updated_at: new Date()
-                    };
-                    db.results.update({user_token: user.token, date: r.date}, r, {upsert: true});
-                    deferred.resolve(r);
-                },
-                deferred.reject
-            );
+            limiter.removeTokens(1, function(err, remaining) {
+                shapelink.diary.getDay({user_token: user.token, date: date}).then(
+                    function (data) {
+                        var total = 0;
+                        for (var i = 0; i < data.result.done_workouts.length; i++) {
+                            var workout = data.result.done_workouts[i];
+                            total += workout.kcal;
+                        }
+                        var r = {
+                            user_token: user.token,
+                            date: date,
+                            result: total,
+                            updated_at: new Date()
+                        };
+                        db.results.update({user_token: user.token, date: r.date}, r, {upsert: true});
+                        deferred.resolve(r);
+                    },
+                    deferred.reject
+                );
+            });
         } else {
             deferred.resolve(result);
         }
