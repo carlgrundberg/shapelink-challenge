@@ -86,7 +86,7 @@ function getResultForUser(participant, startDate, endDate) {
 function getChallenge() {
     var deferred = q.defer();
 
-    shapelink.challenge.getChallenge({user_token: config.shapelink.token, challenge_id: config.challenge}).then(
+    shapelink.challenge.getChallenge({user_token: process.env.SHAPELINK_TOKEN || config.shapelink.token, challenge_id: config.challenge}).then(
         function (data) {
             var challenge = _.extend(data.result, {updated_at: new Date(), challenge_id: data.result.id});
             delete challenge.id;
