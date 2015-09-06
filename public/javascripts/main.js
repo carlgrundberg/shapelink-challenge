@@ -22,24 +22,25 @@ function renderToplist(el, data) {
     }
 }
 
-function getToplist() {
-    ['totals', 'monthly', 'weekly'].forEach(function(toplist) {
-        var list = JSON.parse(localStorage.getItem(toplist));
-        var container = $('.toplist.'+toplist);
-        if (list) {
-            renderToplist(container, list);
+function getToplist(toplist) {
+    console.log('get toplist', toplist);
+    var list = JSON.parse(localStorage.getItem(toplist));
+    var container = $('.toplist.' + toplist);
+    if (list) {
+        renderToplist(container, list);
+    }
+    return $.ajax({
+        url: '/history/' + toplist,
+        data: {
+            token: user.token
         }
-        $.ajax({
-            url: '/history/' + toplist,
-            data: {
-                token: user.token
-            }
-        }).done(function (data) {
-            localStorage.setItem(toplist, JSON.stringify(data));
-            renderToplist(container, data);
-            container.find('.loading-overlay').hide();
-        }).fail(onError);
-    });
+    }).done(function (data) {
+        localStorage.setItem(toplist, JSON.stringify(data));
+        renderToplist(container, data);
+        console.log('got toplist', toplist);
+        container.find('.loading-overlay').hide();
+    }).fail(onError);
+
 }
 
 function getChallenge() {
@@ -54,7 +55,14 @@ function getChallenge() {
 function show() {
     $('#register').hide();
     $('.toplist').removeClass('hidden');
-    getChallenge().done(getToplist);
+    getChallenge().done(function() {
+        var d = $.Deferred().resolve();
+        ['totals', 'monthly', 'weekly'].forEach(function(toplist) {
+            d = d.then(function() {
+               return getToplist(toplist);
+            });
+        });
+    });
 }
 
 if(user) {
