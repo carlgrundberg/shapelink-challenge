@@ -14,7 +14,7 @@ config = _.extend(config, {
     startDate: "2015-07-01",
     endDate: "2015-12-31"
 });
-var Shapelink = require('shapelink-node-sdk').Shapelink;
+var Shapelink = require('shapelink').Shapelink;
 var shapelink = new Shapelink(process.env.SHAPELINK_KEY || config.shapelink.apiKey, process.env.SHAPELINK_SECRET || config.shapelink.secret, 'sv', {}, true);
 var RateLimiter = require('limiter').RateLimiter;
 var limiter = new RateLimiter(10, 'second');
