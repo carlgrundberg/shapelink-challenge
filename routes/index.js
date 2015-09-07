@@ -45,13 +45,13 @@ function getDayResultForUser(user, date) {
 
     db.results.findOne({
         user_token: user.token,
-        date: date,
+        date: date
     }, function (err, result) {
         if (err) {
             deferred.reject(err);
+        } else {
+            deferred.resolve(result);
         }
-
-        deferred.resolve(result);
     });
 
     return deferred.promise;
@@ -93,8 +93,10 @@ function getResultForUser(participant, startDate, endDate) {
             for (var i in results) {
                 if (results[i].state == 'fulfilled') {
                     var r = results[i].value;
-                    result.dates.push(r);
-                    result.total += r.result;
+                    if(r) {
+                        result.dates.push(r);
+                        result.total += r.result;
+                    }
                 }
             }
 
@@ -153,6 +155,8 @@ function getChallenge(challenge_id) {
             deferred.reject(err);
             return;
         }
+
+        challenge.updated_at_formatted = moment(challenge.updated_at).calendar();
         deferred.resolve(challenge);
     });
 

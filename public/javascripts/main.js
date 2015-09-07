@@ -48,7 +48,9 @@ function getChallenge() {
         url: '/challenge',
         data: user
     }).done(function(data) {
-        $('#header h1').html(data.title);
+        var $header = $('#header');
+        $header.find('h2').html(data.title);
+        $header.find('.updated-at').html(data.updated_at_formatted);
     }).fail(onError);
 }
 
