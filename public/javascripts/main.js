@@ -23,7 +23,6 @@ function renderToplist(el, data) {
 }
 
 function getToplist(toplist) {
-    console.log('get toplist', toplist);
     var list = JSON.parse(localStorage.getItem(toplist));
     var container = $('.toplist.' + toplist);
     if (list) {
@@ -37,7 +36,6 @@ function getToplist(toplist) {
     }).done(function (data) {
         localStorage.setItem(toplist, JSON.stringify(data));
         renderToplist(container, data);
-        console.log('got toplist', toplist);
         container.find('.loading-overlay').hide();
     }).fail(onError);
 
