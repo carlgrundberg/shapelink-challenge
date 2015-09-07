@@ -1,5 +1,6 @@
 var q = require('q');
-var moment = require('moment');
+var moment = require('moment-timezone');
+moment.tz.setDefault("Europe/Stockholm");
 var _ = require('underscore');
 var config;
 try {

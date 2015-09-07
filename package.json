@@ -12,7 +12,7 @@
     "express": "~4.11.0",
     "hbs": "~2.8.0",
     "limiter": "^1.0.5",
-    "moment": "^2.9.0",
+    "moment-timezone": "^0.4.0",
     "mongojs": "^1.2.1",
     "morgan": "~1.5.1",
     "node-persist": "0.0.3",

@@ -1,6 +1,7 @@
 var q = require('q');
 var express = require('express');
-var moment = require('moment');
+var moment = require('moment-timezone');
+moment.tz.setDefault("Europe/Stockholm");
 var router = express.Router();
 var _ = require('underscore');
 var config;
