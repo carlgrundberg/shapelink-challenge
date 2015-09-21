@@ -34,7 +34,7 @@ function getDayResultForUser(user, date) {
             deferred.reject(err);
             return;
         }
-        shapelink.diary.getDay({user_token: user.token, date: date}).then(
+        shapelink.diary.getDay({user_token: user.token, date: date.format('YYYY-MM-DD')}).then(
             function (data) {
                 var total = 0;
                 for (var i = 0; i < data.result.done_workouts.length; i++) {
@@ -42,12 +42,17 @@ function getDayResultForUser(user, date) {
                     total += workout.kcal;
                 }
                 var r = {
-                    user_token: user.token,
-                    date: date,
+                    user_id: user.user_id,
+                    date: date.toDate(),
                     result: total,
                     updated_at: new Date()
                 };
-                db.results.update({user_token: user.token, date: r.date}, r, {upsert: true}, function(err) {
+                db.results.update({
+                    user_id: r.user_id,
+                    date: r.date
+                }, r, {
+                    upsert: true
+                }, function(err) {
                     if(err) {
                         deferred.reject(err);
                     } else {
@@ -74,8 +79,7 @@ function getResultForUser(participant, startDate, endDate) {
         }
 
         for (var d = moment(startDate); d.isBefore(endDate) && d.isBefore(now); d = d.add(1, 'days')) {
-            var date = d.format('YYYY-MM-DD');
-            p.push(getDayResultForUser(user, date));
+            p.push(getDayResultForUser(user, d.clone()));
         }
 
         q.allSettled(p).done(deferred.resolve);

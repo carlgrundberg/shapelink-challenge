@@ -41,91 +41,6 @@ function storeUser(user) {
     return deferred.promise;
 }
 
-function getDayResultForUser(user, date) {
-    var deferred = q.defer();
-
-    db.results.findOne({
-        user_token: user.token,
-        date: date
-    }, function (err, result) {
-        if (err) {
-            deferred.reject(err);
-        } else {
-            deferred.resolve(result);
-        }
-    });
-
-    return deferred.promise;
-}
-
-function getResultForUser(participant, startDate, endDate) {
-    var deferred = q.defer();
-    var p = [];
-    var now = moment();
-    db.users.findOne({username: participant.user.username}, function (err, user) {
-        if (err) {
-            deferred.reject(err);
-            return;
-        }
-
-        if (!user) {
-            user = participant.user;
-            deferred.resolve({
-                user: {user_id: user.id, firstname: user.username, lastname: '', registered: false},
-                total: participant.value
-            });
-            return;
-        }
-
-        user.registered = true;
-
-        for (var d = moment(startDate); d.isBefore(endDate) && d.isBefore(now); d = d.add(1, 'days')) {
-            var date = d.format('YYYY-MM-DD');
-            p.push(getDayResultForUser(user, date));
-        }
-
-        q.allSettled(p).done(function (results) {
-            var result = {
-                user: _.pick(user, ['user_id', 'firstname', 'lastname', 'registered']),
-                total: 0,
-                dates: []
-            };
-
-            for (var i in results) {
-                if (results[i].state == 'fulfilled') {
-                    var r = results[i].value;
-                    if(r) {
-                        result.dates.push(r);
-                        result.total += r.result;
-                    }
-                }
-            }
-
-            deferred.resolve(result);
-        });
-    });
-
-    return deferred.promise;
-}
-
-function fixResults(r, label) {
-    r.sort(function (a, b) {
-        return a.total < b.total ? 1 : -1;
-    });
-    var p = 0;
-    for (var i in r) {
-        if (i == 0 || r[i].total != r[i - 1].total) {
-            p = parseInt(i) + 1;
-        }
-        r[i].pos = p;
-        r[i].total = Math.floor(r[i].total / 10);
-    }
-    return {
-        results: r,
-        label: label
-    };
-}
-
 /* GET home page. */
 router.get('/', function (req, res) {
     res.render('index', {
@@ -182,63 +97,84 @@ router.get('/challenge', function (req, res, next) {
 
 });
 
-function getResultsForChallenge(challenge, range) {
-    var configStartDate = moment(config.startDate);
-    var configEndDate = moment(config.endDate);
-    var startDate = false;
-    var endDate = false;
-    var label = 'Standings';
-
-    if (range == 'weekly') {
-        startDate = moment().subtract(1, 'weeks').startOf('isoWeek');
-        endDate = moment().subtract(1, 'weeks').endOf('isoWeek');
-        label = 'Week ' + startDate.format('w');
-    }
-    if (range == 'monthly') {
-        startDate = moment().subtract(1, 'month').startOf('month');
-        endDate = moment().subtract(1, 'month').endOf('month');
-        label = startDate.format('MMMM');
-    }
-
-    if (!startDate || startDate.isBefore(configStartDate)) {
-        startDate = configStartDate;
-    }
-
-    if (!endDate || endDate.isAfter(configEndDate)) {
-        endDate = configEndDate;
-    }
-
-    var deferred = q.defer();
-    var r = [];
-    var p = [];
-    for (var i in challenge.results.data) {
-        var participant = challenge.results.data[i];
-        p.push(getResultForUser(participant, startDate, endDate));
-    }
-    if (p.length > 0) {
-        q.allSettled(p).done(function (results) {
-            for (var i in results) {
-                if (results[i].state == 'fulfilled') {
-                    var result = results[i].value;
-                    if(range == 'totals' || result.user.registered) {
-                        r.push(result);
-                    }
-                }
-            }
-            deferred.resolve(fixResults(r, label));
-        }, deferred.reject);
-    } else {
-        deferred.resolve(fixResults(r, label));
-    }
-    return deferred.promise;
+function getUserForResult(result) {
+    var d = q.defer();
+    db.users.findOne({user_id: result.user_id}, function(err, user) {
+        if(err) {
+            d.reject(err);
+            return;
+        }
+        if(user) {
+            user.id = user.user_id;
+            result.user = _.pick(user, ['id', 'firstname', 'lastname', 'username', 'image']);
+            delete result.user_id;
+        }
+        d.resolve(user);
+    });
+    return d.promise;
 }
 
-router.get('/history/:range', function (req, res, next) {
-    getChallenge(config.challenge).then(function (challenge) {
-        getResultsForChallenge(challenge, req.params.range).then(function (results) {
+
+function getResults(args, res, next) {
+    db.results.aggregate(args, function (err, results) {
+        if (err) {
+            next(err);
+            return;
+        }
+
+        var p = [];
+
+        for (var i in results) {
+            var result = results[i];
+            if(result.user_id) {
+                p.push(getUserForResult(result));
+            }
+        }
+
+        q.allSettled(p).then(function() {
             res.send(results);
-        }, next);
-    }, next);
+        });
+    });
+}
+
+router.get('/results', function (req, res, next) {
+    var args = [
+        {$project: {user_id: "$user_id", result: "$result"}},
+        {$group: {_id: "$user_id", result: {$sum: "$result"}}},
+        {$project: {_id: 0, user_id: "$_id", result: "$result"}},
+        {$sort: {"result": 1}}
+    ];
+
+    getResults(args, res, next);
+});
+
+router.get('/results/:range', function (req, res, next) {
+    var period;
+    switch (req.params.range) {
+        case 'weekly':
+            period = {$week: "$local_date"};
+            break;
+        case 'monthly':
+            period = {$month: "$local_date"};
+            break;
+        default:
+            res.status(502).send('Wrong range');
+            return;
+    }
+
+    var diff = moment.tz.zone("Europe/Stockholm").offset(new Date()) * 60 * 1000;
+
+    var args = [
+        {$project: { user_id: "$user_id", result: "$result", local_date: { $subtract: [ "$date", diff ]}}},
+        {$project: {user_id: "$user_id", result: "$result", period: period}},
+        {$group: {_id: {user_id: "$user_id", period: "$period"}, result: {$sum: "$result"}}},
+        {$sort: {"result": 1}},
+        {$group: {_id: "$_id.period", users: {$push: {user_id: "$_id.user_id", result: "$result"}}}},
+        {$project: {_id: 0, period: "$_id", results: "$users"}},
+        {$sort: {"period": 1}}
+    ];
+
+    getResults(args, res, next);
 });
 
 module.exports = router;
