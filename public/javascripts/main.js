@@ -20,8 +20,9 @@ function renderToplist(el, data) {
     var lastresult = 0;
     for (var i in data) {
         var res = data[i];
-        if (res.result == lastresult) {
-            pos = i + 1;
+        if (res.result != lastresult) {
+            pos = parseInt(i) + 1;
+            lastresult = res.result;
         }
         if(!res.user && res.user_id) {
             res.user = users[res.user_id];
