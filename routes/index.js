@@ -142,7 +142,7 @@ router.get('/results', function (req, res, next) {
         {$project: {user_id: "$user_id", result: "$result"}},
         {$group: {_id: "$user_id", result: {$sum: "$result"}}},
         {$project: {_id: 0, user_id: "$_id", result: "$result"}},
-        {$sort: {"result": 1}}
+        {$sort: {"result": -1}}
     ];
 
     getResults(args, res, next);
@@ -168,7 +168,7 @@ router.get('/results/:range', function (req, res, next) {
         {$project: { user_id: "$user_id", result: "$result", local_date: { $subtract: [ "$date", diff ]}}},
         {$project: {user_id: "$user_id", result: "$result", period: period}},
         {$group: {_id: {user_id: "$user_id", period: "$period"}, result: {$sum: "$result"}}},
-        {$sort: {"result": 1}},
+        {$sort: {"result": -1}},
         {$group: {_id: "$_id.period", users: {$push: {user_id: "$_id.user_id", result: "$result"}}}},
         {$project: {_id: 0, period: "$_id", results: "$users"}},
         {$sort: {"period": 1}}

@@ -26,7 +26,9 @@ function renderToplist(el, data) {
         if(!res.user && res.user_id) {
             res.user = users[res.user_id];
         }
-        table.append('<tr><td>' + pos + '</td><td>' + res.user.firstname + ' ' + res.user.lastname + '</td><td>' + Math.floor(res.result / 10) + '</td></tr>');
+        if(res.user) {
+            table.append('<tr><td>' + pos + '</td><td>' + res.user.firstname + ' ' + res.user.lastname + '</td><td>' + Math.floor(res.result / 10) + '</td></tr>');
+        }
         if(!users[res.user.id]) {
             users[res.user.id] = res.user;
         }
