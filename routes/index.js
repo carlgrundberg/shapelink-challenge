@@ -174,9 +174,9 @@ router.get('/results/:range', function (req, res, next) {
     // Account for timezone diff so result is used in correct week/month
     var diff = moment.tz.zone("Europe/Stockholm").offset(new Date()) * 60 * 1000;
 
-    // mongo week aggregation uses sunday as first day of week so move all result one day back to get correct week number
+    // mongo week aggregation uses sunday as first day of week so move all result 6 days forward, which also gives us correct week number
     if(req.params.range == 'weekly') {
-        diff += (24*60*60*1000);
+        diff -= (6*24*60*60*1000);
     }
 
     if(diff != 0) {
