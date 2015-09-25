@@ -162,10 +162,7 @@ router.get('/results/:range', function (req, res, next) {
             return;
     }
 
-    var diff = moment.tz.zone("Europe/Stockholm").offset(new Date()) * 60 * 1000;
-
     var args = [
-        {$project: { user_id: "$user_id", result: "$result", local_date: { $subtract: [ "$date", diff ]}}},
         {$project: {user_id: "$user_id", result: "$result", period: period}},
         {$group: {_id: {user_id: "$user_id", period: "$period"}, result: {$sum: "$result"}}},
         {$sort: {"result": -1}},
@@ -173,6 +170,18 @@ router.get('/results/:range', function (req, res, next) {
         {$project: {_id: 0, period: "$_id", results: "$users"}},
         {$sort: {"period": 1}}
     ];
+
+    // Account for timezone diff so result is used in correct week/month
+    var diff = moment.tz.zone("Europe/Stockholm").offset(new Date()) * 60 * 1000;
+
+    // mongo week aggregation uses sunday as first day of week so move all result one day back to get correct week number
+    if(req.params.range == 'weekly') {
+        diff += (24*60*60*100);
+    }
+
+    if(diff != 0) {
+        args.unshift({$project: { user_id: "$user_id", result: "$result", local_date: { $subtract: [ "$date", diff ]}}});
+    }
 
     getResults(args, res, next);
 });
