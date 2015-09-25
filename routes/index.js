@@ -176,7 +176,7 @@ router.get('/results/:range', function (req, res, next) {
 
     // mongo week aggregation uses sunday as first day of week so move all result one day back to get correct week number
     if(req.params.range == 'weekly') {
-        diff += (24*60*60*100);
+        diff += (24*60*60*1000);
     }
 
     if(diff != 0) {
