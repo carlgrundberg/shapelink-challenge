@@ -18,7 +18,7 @@ config = _.extend(config, {
 var Shapelink = require('shapelink').Shapelink;
 var shapelink = new Shapelink(process.env.SHAPELINK_KEY || config.shapelink.apiKey, process.env.SHAPELINK_SECRET || config.shapelink.secret, 'sv', {}, true);
 
-var db = require('mongojs')(process.env.MONGOLAB_URI || 'localhost/shapelink-challenge', ['users', 'results', 'challenges']);
+var db = require('mongojs')(process.env.MONGOLAB_URI || 'localhost/shapelink-challenge', ['users', 'results', 'challenges'], {authMechanism: 'ScramSHA1'});
 db.users.createIndex({'token': 1}, {unique: true});
 
 function storeUser(user) {
