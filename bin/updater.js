@@ -19,7 +19,7 @@ var shapelink = new Shapelink(process.env.SHAPELINK_KEY || config.shapelink.apiK
 var RateLimiter = require('limiter').RateLimiter;
 var limiter = new RateLimiter(10, 'second');
 
-var db = require('mongojs')(process.env.MONGOLAB_URI || 'localhost/shapelink-challenge', ['users', 'results', 'challenges']);
+var db = require('mongojs')(process.env.MONGOLAB_URI || 'localhost/shapelink-challenge', ['users', 'results', 'challenges'], {authMechanism: 'ScramSHA1'});
 db.users.createIndex({'token': 1}, {unique: true});
 
 function errorHandler(err) {
