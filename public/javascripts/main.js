@@ -15,25 +15,31 @@ function renderToplist(el, data) {
     var table = $('<table>');
     table.addClass('table table-striped');
     el.append(table);
-    table.append('<tr><th>Pos</th><th>Name</th><th>Points</th></tr>tr>');
+    table.append('<tr><th>Pos</th><th>Name</th><th>Points</th></tr>');
     var pos = 1;
+    var result;
     var lastresult = 0;
+    var totals = 0;
     for (var i in data) {
         var res = data[i];
         if (res.result != lastresult) {
             pos = parseInt(i) + 1;
             lastresult = res.result;
         }
+        result = Math.floor(res.result / 10);
+        totals += result;
         if(!res.user && res.user_id) {
             res.user = users[res.user_id];
         }
         if(res.user) {
-            table.append('<tr><td>' + pos + '</td><td>' + res.user.firstname + ' ' + res.user.lastname + '</td><td>' + Math.floor(res.result / 10) + '</td></tr>');
+
+            table.append('<tr><td>' + pos + '</td><td>' + res.user.firstname + ' ' + res.user.lastname + '</td><td>' + result + '</td></tr>');
         }
         if(!users[res.user.id]) {
             users[res.user.id] = res.user;
         }
     }
+    table.append('<tr><th></th><th>Totals</th><th>'+totals+'</th></tr>');
 }
 
 function getTotals(cb) {

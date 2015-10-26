@@ -10,8 +10,8 @@ try {
 }
 config = _.extend(config, {
     challenge: 62937,
-    startDate: "2015-07-01",
-    endDate: "2015-12-31"
+    startDate: "2015-07-01 03:00",
+    endDate: "2015-12-31 03:00"
 });
 
 var Shapelink = require('shapelink').Shapelink;
@@ -73,7 +73,7 @@ function getResultForUser(participant, startDate, endDate) {
     var p = [];
     var now = moment();
     db.users.findOne({username: participant.user.username}, function (err, user) {
-        if (err | !user) {
+        if (err || !user) {
             deferred.reject(err);
             return;
         }
