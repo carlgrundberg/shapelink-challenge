@@ -2,7 +2,7 @@ var user = localStorage.getItem("user");
 var users = {};
 
 function onError(jqXHR, textStatus, errorThrown) {
-    var error = JSON.parse(jqXHR.responseText)
+    var error = JSON.parse(jqXHR.responseText);
     console.log(error);
     $('#error-message').html(error.message).removeClass('hidden').scrollTo();
 }
@@ -40,6 +40,21 @@ function renderToplist(el, data) {
         }
     }
     table.append('<tr><th></th><th>Totals</th><th>'+totals+'</th></tr>');
+}
+
+function renderWorkouts(el, data) {
+    var table = $('<table>');
+    table.addClass('table table-striped');
+    el.append(table);
+    table.append('<tr><th>Activity</th><th>Duration</th><th>Intensity</th><th>Points</th></tr>');
+    for (var i in data) {
+        var d = data[i];
+        table.append('<tr><td>' + d.date + '</td></tr>');
+        for(var j in d.workouts) {
+            var w = d.workouts[j];
+            table.append('<tr><td>' + w.activity + '</td><td>' + w.duration + '</td><td>' + w.intensity + '</td><td>' + w.points + '</td></tr>')
+        }
+    }
 }
 
 function getTotals(cb) {
@@ -84,12 +99,25 @@ function getChallenge() {
     }).fail(onError);
 }
 
+function getWorkouts() {
+    var container = $('#workouts');
+    container.removeClass('hidden');
+    return $.ajax({
+        url: '/workouts',
+        data: user
+    }).done(function (data) {
+        renderWorkouts(container, data);
+        hideLoading(container);
+    }).fail(onError);
+}
+
 function show() {
-    getChallenge();
+    /*getChallenge();
     getTotals(function() {
         getPeriodResults('monthly');
         getPeriodResults('weekly');
-    });
+    });*/
+    getWorkouts();
 }
 
 if (user) {
