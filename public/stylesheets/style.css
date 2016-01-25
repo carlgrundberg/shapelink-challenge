@@ -1,3 +1,10 @@
+body {
+    font-size: 20px;
+}
+
+.table-workouts img {
+    height: 30px;
+}
 
 .section {
     position: relative;

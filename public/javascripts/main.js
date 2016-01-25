@@ -44,15 +44,14 @@ function renderToplist(el, data) {
 
 function renderWorkouts(el, data) {
     var table = $('<table>');
-    table.addClass('table table-striped');
+    table.addClass('table table-striped table-workouts');
     el.append(table);
-    table.append('<tr><th>Activity</th><th>Duration</th><th>Intensity</th><th>Points</th></tr>');
+    table.append('<tr><th>Date</th><th>Activity</th><th>Weight</th><th>Min</th><th>Int.</th><th>Pts</th></tr>');
     for (var i in data) {
         var d = data[i];
-        table.append('<tr><td>' + d.date + '</td></tr>');
         for(var j in d.workouts) {
             var w = d.workouts[j];
-            table.append('<tr><td>' + w.activity + '</td><td>' + w.duration + '</td><td>' + w.intensity + '</td><td>' + w.points + '</td></tr>')
+            table.append('<tr><td>'+ d.date+'</td><td><img src="http://www.shapelink.com/images/diary_icons/'+ w.icon +'.png"/> ' + w.activity + '</td><td>' + w.weight + '</td><td>' + w.duration + '</td><td>' + w.intensity.substr(0, 1) + '</td><td>' + w.points + '</td></tr>')
         }
     }
 }

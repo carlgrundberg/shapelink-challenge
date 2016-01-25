@@ -15,11 +15,10 @@ config = _.extend(config, {
     startDate: "2015-07-01",
     endDate: "2015-12-31"
 });
-var Shapelink = require('shapelink').Shapelink;
+var Shapelink = require('../../shapelink-node-sdk/shapelink').Shapelink;
 var shapelink = new Shapelink(process.env.SHAPELINK_KEY || config.shapelink.apiKey, process.env.SHAPELINK_SECRET || config.shapelink.secret, 'sv', {}, true);
 
 var ap = require('../../weight-watchers-activity-points/index');
-
 
 var db = require('mongojs')(process.env.MONGOLAB_URI || 'localhost/shapelink-challenge', ['users', 'results', 'challenges'], {authMechanism: 'ScramSHA1'});
 db.users.createIndex({'token': 1}, {unique: true});
@@ -189,49 +188,70 @@ router.get('/results/:range', function (req, res, next) {
     getResults(args, res, next);
 });
 
-router.get('/workouts', function (req, res, next) {
-    var date = moment().subtract(7, 'days');
-    var end = moment();
-    var intensity_convert = {
-        "low": "low",
-        "normal": "moderate",
-        "high": "high"
-    };
-    var p = [];
-    while (date.isBefore(end)) {
-        p.push(shapelink.diary.getDay({user_token: req.query.token, date: date.format('YYYY-MM-DD')}).then(
-            function(data) {
-                var r = [];
-                for (var i = 0; i < data.result.done_workouts.length; i++) {
-                    var workout = data.result.done_workouts[i];
-                    var duration = Math.round(workout.seconds / 60);
-                    var intensity = intensity_convert[workout.intensity];
-                    r.push({
-                        icon: workout.icon_id,
-                        activity: workout.activity,
-                        duration: duration,
-                        intensity: intensity,
-                        points: ap.calculate(108, duration, intensity)
-                    });
-                }
-                return {
-                    date: data.result.date,
-                    workouts: r
-                };
-            }
-        ));
-        date = date.add(1, 'days');
-    }
+function getWeight(notations, date) {
+    var weight = notations[0].weight;
+    var i = 0;
+    while (i < notations.length && notations[i++].date.isAfter(date));
+    return weight;
+}
 
-    q.allSettled(p).done(function(data) {
-        var r = [];
-        for(var i = 0; i < data.length; i++) {
-            var d = data[i];
-            if(d.state == 'fulfilled' && d.value.workouts.length > 0) {
-                r.push(d.value);
-            }
+router.get('/workouts', function (req, res, next) {
+    shapelink.diary.notations({user_token: req.query.token, types: 'weight', limit: 20}).done(function (data) {
+        if (data.result.diarynotations.length == 0) {
+            res.send({error: 'No weight information'});
+            return;
         }
-       res.send(r);
+        var weight_notations = [];
+        for (var i in data.result.diarynotations) {
+            var n = data.result.diarynotations[i].data;
+            weight_notations.push({date: moment(n.date), weight: n.value})
+        }
+
+        var date = moment().subtract(13, 'days');
+        var end = moment();
+        var intensity_convert = {
+            "low": "low",
+            "normal": "moderate",
+            "high": "high"
+        };
+        var p = [];
+        while (date.isBefore(end)) {
+            p.push(shapelink.diary.getDay({user_token: req.query.token, date: date.format('YYYY-MM-DD')}).then(
+                function (data) {
+                    var r = [];
+                    for (var i = 0; i < data.result.done_workouts.length; i++) {
+                        var workout = data.result.done_workouts[i];
+                        var duration = Math.round(workout.seconds / 60);
+                        var intensity = intensity_convert[workout.intensity];
+                        var weight = getWeight(weight_notations, data.result.date);
+                        r.push({
+                            icon: workout.icon_id,
+                            activity: workout.activity,
+                            duration: duration,
+                            intensity: intensity,
+                            weight: weight,
+                            points: ap.calculate(weight, duration, intensity)
+                        });
+                    }
+                    return {
+                        date: data.result.date,
+                        workouts: r
+                    };
+                }
+            ));
+            date = date.add(1, 'days');
+        }
+
+        q.allSettled(p).done(function (data) {
+            var r = [];
+            for (var i = 0; i < data.length; i++) {
+                var d = data[i];
+                if (d.state == 'fulfilled' && d.value.workouts.length > 0) {
+                    r.push(d.value);
+                }
+            }
+            res.send(r);
+        });
     });
 });
 
