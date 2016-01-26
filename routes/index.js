@@ -15,10 +15,10 @@ config = _.extend(config, {
     startDate: "2015-07-01",
     endDate: "2015-12-31"
 });
-var Shapelink = require('../../shapelink-node-sdk/shapelink').Shapelink;
+var Shapelink = require('shapelink').Shapelink;
 var shapelink = new Shapelink(process.env.SHAPELINK_KEY || config.shapelink.apiKey, process.env.SHAPELINK_SECRET || config.shapelink.secret, 'sv', {}, true);
 
-var ap = require('../../weight-watchers-activity-points/index');
+var ap = require('activity-points');
 
 var db = require('mongojs')(process.env.MONGOLAB_URI || 'localhost/shapelink-challenge', ['users', 'results', 'challenges'], {authMechanism: 'ScramSHA1'});
 db.users.createIndex({'token': 1}, {unique: true});
@@ -189,10 +189,11 @@ router.get('/results/:range', function (req, res, next) {
 });
 
 function getWeight(notations, date) {
-    var weight = notations[0].weight;
     var i = 0;
-    while (i < notations.length && notations[i++].date.isAfter(date));
-    return weight;
+    while (i < notations.length && notations[i].date.isAfter(date, 'day')) {
+        i++;
+    }
+    return notations[i].weight;
 }
 
 router.get('/workouts', function (req, res, next) {
@@ -206,7 +207,6 @@ router.get('/workouts', function (req, res, next) {
             var n = data.result.diarynotations[i].data;
             weight_notations.push({date: moment(n.date), weight: n.value})
         }
-
         var date = moment().subtract(13, 'days');
         var end = moment();
         var intensity_convert = {
