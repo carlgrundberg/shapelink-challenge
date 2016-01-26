@@ -17,7 +17,7 @@
     "mongojs": "^1.2.1",
     "morgan": "~1.5.1",
     "node-persist": "0.0.3",
-    "q": "^1.1.2",
+    "q": "^1.4.1",
     "serve-favicon": "~2.2.0",
     "shapelink": "^1.1.0",
     "slick-carousel": "^1.4.1",
