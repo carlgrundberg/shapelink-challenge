@@ -232,6 +232,7 @@ function getWorkouts(req, res, startDate, endDate) {
                         var intensity = intensity_convert[workout.intensity];
                         var weight = getWeight(weight_notations, data.result.date);
                         r.push({
+                            id: workout.id,
                             icon: workout.icon_id,
                             activity: workout.activity,
                             duration: duration,
