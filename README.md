@@ -1,6 +1,11 @@
 Shapelink Challenge
 ===================
 
+# Requirements
+* mongobb running on localhost
+
+# Setup
+
 Add a config file in the root folder.
 
 ```
@@ -12,6 +17,9 @@ Add a config file in the root folder.
 }
 ```
 
-Start server with
+# Start server with
 
-node ./bin/www
+npm start
+
+Default port is 3000
+

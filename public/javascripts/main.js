@@ -46,18 +46,18 @@ function renderWorkouts(el, data) {
     var table = $('<table>');
     table.addClass('table table-striped table-workouts');
     el.append(table);
-    table.append('<tr><th>Date</th><th>Activity</th><th>Weight</th><th>Min</th><th>Int.</th><th>Pts</th></tr>');
+    table.append('<tr><th>Date</th><th>Activity</th><th>Weight</th><th title="Minutes">Min</th><th title="Intencity">Int.</th><th title="Points">Pts</th><th></th></tr>');
     var total_points = [];
     for (var i in data) {
         var d = data[i];
         for(var j in d.workouts) {
             var w = d.workouts[j];
             total_points.push(w.points);
-            table.append('<tr><td>'+ d.date+'</td><td><img src="http://www.shapelink.com/images/diary_icons/'+ w.icon +'.png"/> <span class="hidden-xs">' + w.activity + '</span></td><td>' + w.weight + '</td><td>' + w.duration + '</td><td>' + w.intensity.substr(0, 1) + '</td><td>' + w.points + '</td></tr>')
+            table.append('<tr><td>'+ d.date+'</td><td><img src="http://www.shapelink.com/images/diary_icons/'+ w.icon +'.png"/> <span class="hidden-xs">' + w.activity + '</span></td><td>' + w.weight + '</td><td>' + w.duration + '</td><td>' + w.intensity.substr(0, 1) + '</td><td>' + w.points + '</td><td><a href="http://www.shapelink.com/sv/diary/workout/id/'+ w.id +'"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></a></td></tr>')
         }
     }
 
-    table.append('<tr><th colspan="4">Total</th><th>'+(total_points.length > 1 ? total_points.join(',') : '') +'</th><th>' + total_points.reduce(function(a,b) { return a+b }, 0) + '</th></tr>')
+    table.append('<tr><th colspan="4">Total</th><th>'+(total_points.length > 1 ? total_points.join(',') : '') +'</th><th>' + total_points.reduce(function(a,b) { return a+b }, 0) + '</th><th></th></tr>')
 }
 
 function getTotals(cb) {
