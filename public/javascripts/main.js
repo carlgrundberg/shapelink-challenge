@@ -47,13 +47,17 @@ function renderWorkouts(el, data) {
     table.addClass('table table-striped table-workouts');
     el.append(table);
     table.append('<tr><th>Date</th><th>Activity</th><th>Weight</th><th>Min</th><th>Int.</th><th>Pts</th></tr>');
+    var total_points = [];
     for (var i in data) {
         var d = data[i];
         for(var j in d.workouts) {
             var w = d.workouts[j];
-            table.append('<tr><td>'+ d.date+'</td><td><img src="http://www.shapelink.com/images/diary_icons/'+ w.icon +'.png"/> ' + w.activity + '</td><td>' + w.weight + '</td><td>' + w.duration + '</td><td>' + w.intensity.substr(0, 1) + '</td><td>' + w.points + '</td></tr>')
+            total_points.push(w.points);
+            table.append('<tr><td>'+ d.date+'</td><td><img src="http://www.shapelink.com/images/diary_icons/'+ w.icon +'.png"/> <span class="hidden-xs">' + w.activity + '</span></td><td>' + w.weight + '</td><td>' + w.duration + '</td><td>' + w.intensity.substr(0, 1) + '</td><td>' + w.points + '</td></tr>')
         }
     }
+
+    table.append('<tr><th colspan="4">Total</th><th>'+(total_points.length > 1 ? total_points.join(',') : '') +'</th><th>' + total_points.reduce(function(a,b) { return a+b }, 0) + '</th></tr>')
 }
 
 function getTotals(cb) {
@@ -98,14 +102,15 @@ function getChallenge() {
     }).fail(onError);
 }
 
-function getWorkouts() {
-    var container = $('#workouts');
+function getWorkouts(id) {
+    var container = $('#' + id);
     container.removeClass('hidden');
     return $.ajax({
-        url: '/workouts',
+        url: '/workouts/' + id,
         data: user
     }).done(function (data) {
-        renderWorkouts(container, data);
+        container.find('h2').html('Week ' + data.week);
+        renderWorkouts(container, data.workouts);
         hideLoading(container);
     }).fail(onError);
 }
@@ -116,7 +121,8 @@ function show() {
         getPeriodResults('monthly');
         getPeriodResults('weekly');
     });*/
-    getWorkouts();
+    getWorkouts('current');
+    getWorkouts('prev');
 }
 
 if (user) {

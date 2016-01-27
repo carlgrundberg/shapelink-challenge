@@ -1,6 +1,7 @@
 var q = require('q');
 var express = require('express');
 var moment = require('moment-timezone');
+moment.locale('sv');
 moment.tz.setDefault("Europe/Stockholm");
 var router = express.Router();
 var _ = require('underscore');
@@ -196,10 +197,16 @@ function getWeight(notations, date) {
     return notations[i].weight;
 }
 
-router.get('/workouts', function (req, res, next) {
+function getWorkouts(req, res, startDate, endDate) {
+    console.log("start", startDate.toDate());
+    console.log("end", endDate.toDate());
     shapelink.diary.notations({user_token: req.query.token, types: 'weight', limit: 20}).done(function (data) {
         if (data.result.diarynotations.length == 0) {
-            res.send({error: 'No weight information'});
+            res.status(400).send({
+                error: {
+                    message: 'No weight information'
+                }
+            });
             return;
         }
         var weight_notations = [];
@@ -207,16 +214,16 @@ router.get('/workouts', function (req, res, next) {
             var n = data.result.diarynotations[i].data;
             weight_notations.push({date: moment(n.date), weight: n.value})
         }
-        var date = moment().subtract(13, 'days');
-        var end = moment();
         var intensity_convert = {
             "low": "low",
             "normal": "moderate",
             "high": "high"
         };
         var p = [];
-        while (date.isBefore(end)) {
-            p.push(shapelink.diary.getDay({user_token: req.query.token, date: date.format('YYYY-MM-DD')}).then(
+        var week = startDate.format('W');
+
+        while (startDate.isBefore(endDate)) {
+            p.push(shapelink.diary.getDay({user_token: req.query.token, date: startDate.format('YYYY-MM-DD')}).then(
                 function (data) {
                     var r = [];
                     for (var i = 0; i < data.result.done_workouts.length; i++) {
@@ -234,12 +241,12 @@ router.get('/workouts', function (req, res, next) {
                         });
                     }
                     return {
-                        date: data.result.date,
+                        date: moment(data.result.date).format('D/M'),
                         workouts: r
                     };
                 }
             ));
-            date = date.add(1, 'days');
+            startDate = startDate.add(1, 'days');
         }
 
         q.allSettled(p).done(function (data) {
@@ -250,9 +257,24 @@ router.get('/workouts', function (req, res, next) {
                     r.push(d.value);
                 }
             }
-            res.send(r);
+            res.send({
+                week: week,
+                workouts: r
+            });
         });
     });
+}
+
+router.get('/workouts/:week', function (req, res, next) {
+    var startDate = moment();
+    if(req.params.week == 'prev') {
+        startDate = startDate.subtract(7, 'days');
+    }
+    startDate.startOf('week');
+    var endDate = moment(startDate);
+    endDate.endOf('week');
+
+    getWorkouts(req, res, startDate, endDate);
 });
 
 module.exports = router;
