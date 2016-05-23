@@ -49,12 +49,9 @@ function renderWorkouts(el, data) {
     table.append('<tr><th>Date</th><th>Activity</th><th>Weight</th><th>Min</th><th>Int.</th><th>Pts</th></tr>');
     var total_points = [];
     for (var i in data) {
-        var d = data[i];
-        for(var j in d.workouts) {
-            var w = d.workouts[j];
-            total_points.push(w.points);
-            table.append('<tr><td>'+ d.date+'</td><td><img src="http://www.shapelink.com/images/diary_icons/'+ w.icon +'.png"/> <span class="hidden-xs">' + w.activity + '</span></td><td>' + w.weight + '</td><td>' + w.duration + '</td><td>' + w.intensity.substr(0, 1) + '</td><td>' + w.points + '</td></tr>')
-        }
+        var w = data[i];
+        total_points.push(w.points);
+        table.append('<tr><td>'+ w.date+'</td><td><img src="http://www.shapelink.com/images/diary_icons/'+ w.icon +'.png"/> <span class="hidden-xs">' + w.activity + '</span></td><td>' + w.weight + '</td><td>' + w.duration + '</td><td>' + w.intensity.substr(0, 1) + '</td><td>' + w.points + '</td></tr>')
     }
 
     table.append('<tr><th colspan="4">Total</th><th>'+(total_points.length > 1 ? total_points.join(',') : '') +'</th><th>' + total_points.reduce(function(a,b) { return a+b }, 0) + '</th></tr>')

@@ -200,7 +200,7 @@ function getWeight(notations, date) {
 function getWorkouts(req, res, startDate, endDate) {
     console.log("start", startDate.toDate());
     console.log("end", endDate.toDate());
-    shapelink.diary.notations({user_token: req.query.token, types: 'weight', limit: 20}).done(function (data) {
+    shapelink.diarynotation({user_token: req.query.token, types: 'weight', limit: 20}).done(function (data) {
         if (data.result.diarynotations.length == 0) {
             res.status(400).send({
                 error: {
@@ -219,49 +219,54 @@ function getWorkouts(req, res, startDate, endDate) {
             "normal": "moderate",
             "high": "high"
         };
-        var p = [];
         var week = startDate.format('W');
 
-        while (startDate.isBefore(endDate)) {
-            p.push(shapelink.diary.getDay({user_token: req.query.token, date: startDate.format('YYYY-MM-DD')}).then(
-                function (data) {
-                    var r = [];
-                    for (var i = 0; i < data.result.done_workouts.length; i++) {
-                        var workout = data.result.done_workouts[i];
-                        var duration = Math.round(workout.seconds / 60);
-                        var intensity = intensity_convert[workout.intensity];
-                        var weight = getWeight(weight_notations, data.result.date);
-                        r.push({
-                            icon: workout.icon_id,
-                            activity: workout.activity,
-                            duration: duration,
-                            intensity: intensity,
-                            weight: weight,
-                            points: ap.calculate(weight, duration, intensity)
-                        });
-                    }
-                    return {
-                        date: moment(data.result.date).format('D/M'),
-                        workouts: r
-                    };
-                }
-            ));
-            startDate = startDate.add(1, 'days');
-        }
+        shapelink.workout.get({user_token: req.query.token, min_date: startDate.format('YYYY-MM-DD'), max_date: endDate.format('YYYY-MM-DD')}).done(function(data) {
+               var weight;
+               var activity;
+               var workout;
+               var r = [];
+               var duration;
+               var intensity;
+               for (var i = 0; i < data.result.workouts.length; i++) {
+                   workout = data.result.workouts[i];
+                   weight = getWeight(weight_notations, workout.date);
+                   if(workout.cardiogym_activities.length > 0) {
+                       for(var j = 0; j < workout.cardiogym_activities.length; j++) {
+                           activity = workout.cardiogym_activities[j];
+                           duration = Math.round(activity.duration / 60);
+                           intensity = intensity_convert[activity.intensity];
+                           r.push({
+                               date: workout.date,
+                               icon: activity.icon_id,
+                               activity: activity.activity,
+                               duration: duration,
+                               intensity: intensity,
+                               weight: weight,
+                               points: ap.calculate(weight, duration, intensity)
+                           });
+                       }
+                   } else {
+                       duration = Math.round(workout.duration / 60);
+                       intensity = intensity_convert[workout.intensity];
+                       r.push({
+                           date: workout.date,
+                           icon: workout.icon_id,
+                           activity: workout.activity,
+                           duration: duration,
+                           intensity: intensity,
+                           weight: weight,
+                           points: ap.calculate(weight, duration, intensity)
+                       });
+                   }
 
-        q.allSettled(p).done(function (data) {
-            var r = [];
-            for (var i = 0; i < data.length; i++) {
-                var d = data[i];
-                if (d.state == 'fulfilled' && d.value.workouts.length > 0) {
-                    r.push(d.value);
-                }
-            }
-            res.send({
-                week: week,
-                workouts: r
-            });
-        });
+               }
+               res.send({
+                   week: week,
+                   workouts: r
+               });
+           }
+        );
     });
 }
 
