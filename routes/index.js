@@ -237,6 +237,7 @@ function getWorkouts(req, res, startDate, endDate) {
                            duration = Math.round(activity.duration / 60);
                            intensity = intensity_convert[activity.intensity];
                            r.push({
+                               id: workout.id,
                                date: workout.date,
                                icon: activity.icon_id,
                                activity: activity.activity,
@@ -250,6 +251,7 @@ function getWorkouts(req, res, startDate, endDate) {
                        duration = Math.round(workout.duration / 60);
                        intensity = intensity_convert[workout.intensity];
                        r.push({
+                           id: workout.id,
                            date: workout.date,
                            icon: workout.icon_id,
                            activity: workout.activity,
